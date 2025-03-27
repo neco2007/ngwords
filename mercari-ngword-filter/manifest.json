@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "メルカリNGワードブロッカー",
+  "version": "1.0",
+  "description": "メルカリで指定したNGワードを含む商品をブロックします",
+  "permissions": ["storage", "activeTab", "notifications"],
+  "host_permissions": ["https://jp.mercari.com/*"],
+  "action": {
+    "default_icon": {
+      "16": "images/icon16.png",
+      "48": "images/icon48.png",
+      "128": "images/icon128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://jp.mercari.com/*"],
+      "js": ["content.js"],
+      "css": ["styles.css"]
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}
