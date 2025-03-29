@@ -1,4 +1,4 @@
-// メルカリNGワードブロッカー最終強化版 - 完全修正版
+// メルカリNGワードブロッカー強化版 - 完全修正版
 
 // 設定
 const CONFIG = {
@@ -7,7 +7,7 @@ const CONFIG = {
   // 検索結果の一括処理数
   batchSize: 30,
   // DOM変更の監視間隔 (ms)
-  observerDebounce: 500,
+  observerDebounce: 300,
   // ブロック強度
   blockStrength: 'max',
   // リダイレクト先URL
@@ -27,6 +27,7 @@ let blockCount = 0;                   // ブロックした商品数のカウン
 let controlPanelVisible = true;       // コントロールパネルの表示状態
 let isAdvancedPanelOpen = false;      // 詳細パネルの表示状態
 let isProcessing = false;             // 処理中フラグ
+let processedElements = new Set();    // 処理済み要素を追跡するためのセット
 
 // 最小限のログ出力用関数
 function log(message, type = 'info') {
@@ -39,7 +40,7 @@ function log(message, type = 'info') {
   console.log(`[NGブロッカー] ${prefix} ${message}`);
 }
 
-// 直接指定するNGワードリスト
+// 直接指定するNGワードリスト (抜粋表示)
 const directNgWords = [
   "Copic", "IL BISONTE", "Lindt", "'47", "★wy★", "101 DALMATIANS", "10Gtek", "17906697543", 
               "2pac", "397395458?", "3CE", "3Dペン", "3M", "5 Seconds Of Summer", "5.11", "52TOYS", 
@@ -1238,10 +1239,7 @@ function createControlPanel() {
   // ページの再スキャン
   document.getElementById('ng-rescan-page').addEventListener('click', function() {
     // 処理済みフラグをリセット
-    const checkedItems = document.querySelectorAll('.ng-checked');
-    checkedItems.forEach(function(item) {
-      item.classList.remove('ng-checked');
-    });
+    processedElements.clear();
     
     // ページを再処理
     processPage();
@@ -1262,10 +1260,7 @@ function createControlPanel() {
       });
       
       // 処理済みフラグをリセット
-      const checkedItems = document.querySelectorAll('.ng-checked');
-      checkedItems.forEach(function(item) {
-        item.classList.remove('ng-checked');
-      });
+      processedElements.clear();
       
       // 親要素の設定をリセット
       const parentItems = document.querySelectorAll('.ng-parent-of-blocked');
@@ -1382,54 +1377,6 @@ function updateControlPanel() {
   if (blockCountElem) blockCountElem.textContent = blockCount;
 }
 
-// メッセージリスナー（拡張機能アイコンクリック検知など）
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-  log(`メッセージ受信: ${request.action}`, 'debug');
-  
-  try {
-    if (request.action === 'toggleNgWordFilter') {
-      toggleFilter();
-      sendResponse({status: 'success'});
-    } 
-    else if (request.action === 'getNgWordCount') {
-      const totalCount = directNgWords.length + customNgWords.length;
-      sendResponse({count: totalCount});
-    }
-    else if (request.action === 'updateCustomNgWords') {
-      updateCustomNgWords(request.additionalNgWords);
-      sendResponse({status: 'success'});
-    }
-    else if (request.action === 'updateNgWords') {
-      updateCustomNgWords(request.customNgWords);
-    }
-    else if (request.action === 'updateSettings') {
-      if (request.settings) {
-        // 各設定を更新
-        if (request.settings.customNgWords !== undefined) {
-          updateCustomNgWords(request.settings.customNgWords);
-        }
-        if (request.settings.controlPanelVisible !== undefined) {
-          controlPanelVisible = request.settings.controlPanelVisible;
-          const panel = document.getElementById('ng-control-panel');
-          if (panel) {
-            if (controlPanelVisible) {
-              panel.classList.remove('ng-panel-collapsed');
-            } else {
-              panel.classList.add('ng-panel-collapsed');
-            }
-          }
-        }
-      }
-      sendResponse({status: 'success'});
-    }
-  } catch (e) {
-    log(`メッセージハンドラでエラー: ${e.message}`, 'error');
-    sendResponse({status: 'error', message: e.message});
-  }
-  
-  return true;
-});
-
 // カスタムNGワードを更新する関数
 function updateCustomNgWords(newWords) {
   customNgWords = newWords || [];
@@ -1442,6 +1389,7 @@ function updateCustomNgWords(newWords) {
   
   // フィルタがアクティブならページを再処理
   if (isFilterActive) {
+    processedElements.clear();
     processPage();
   }
 }
@@ -1520,6 +1468,9 @@ function deactivateFilter() {
     warning.remove();
   });
   
+  // 処理済み記録をクリア
+  processedElements.clear();
+  
   // コントロールパネルを更新
   updateControlPanel();
   
@@ -1527,60 +1478,90 @@ function deactivateFilter() {
   blockCount = 0;
 }
 
-// 商品を確実に非表示にする
+// 商品を確実に非表示にする強化版
 function forceHideElement(element) {
   // 既に処理済みならスキップ
   if (element.classList.contains('ng-blocked')) return;
   
-  // クラスを追加
-  element.classList.add('ng-blocked');
+  // 処理済み要素に追加
+  processedElements.add(element);
   
-  // 要素を物理的に非表示にするスタイルを直接適用
-  const hideStyles = `
-    display: none !important; 
-    visibility: hidden !important; 
-    opacity: 0 !important; 
-    height: 0 !important; 
-    width: 0 !important; 
-    position: absolute !important;
-    pointer-events: none !important;
-    clip: rect(0,0,0,0) !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: none !important;
-    overflow: hidden !important;
-    z-index: -9999 !important;
-  `;
-  element.setAttribute('style', hideStyles);
-  
-  // 親要素も処理（最大3階層まで）
-  let parent = element.parentElement;
-  for (let i = 0; parent && i < 3; i++) {
-    parent.classList.add('ng-parent-of-blocked');
-    parent.style.minHeight = '0';
-    parent = parent.parentElement;
-  }
-  
-  // JavaScript経由で確実に非表示にする
-  setTimeout(() => {
-    if (element.style) {
-      element.style.setProperty('display', 'none', 'important');
-      element.style.setProperty('visibility', 'hidden', 'important');
-      element.style.setProperty('opacity', '0', 'important');
-      element.style.setProperty('height', '0', 'important');
-      element.style.setProperty('width', '0', 'important');
-      element.style.setProperty('position', 'absolute', 'important');
-      element.style.setProperty('pointer-events', 'none', 'important');
-      element.style.setProperty('z-index', '-9999', 'important');
+  try {
+    // クラスを追加
+    element.classList.add('ng-blocked');
+    
+    // 要素を物理的に非表示にするスタイルを直接適用
+    const hideStyles = `
+      display: none !important; 
+      visibility: hidden !important; 
+      opacity: 0 !important; 
+      height: 0 !important; 
+      width: 0 !important; 
+      position: absolute !important;
+      pointer-events: none !important;
+      clip: rect(0,0,0,0) !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: none !important;
+      overflow: hidden !important;
+      z-index: -9999 !important;
+      max-height: 0 !important;
+      max-width: 0 !important;
+      min-height: 0 !important;
+      min-width: 0 !important;
+    `;
+    element.setAttribute('style', hideStyles);
+    
+    // 親要素も処理（最大5階層まで）
+    let parent = element.parentElement;
+    for (let i = 0; parent && i < 5; i++) {
+      parent.classList.add('ng-parent-of-blocked');
+      parent.style.minHeight = '0';
+      parent.style.height = 'auto';
+      
+      // 親も要素の変更を監視から除外
+      processedElements.add(parent);
+      
+      parent = parent.parentElement;
     }
     
-    // クリックイベントを無効化
-    element.addEventListener('click', e => {
-      e.preventDefault();
-      e.stopPropagation();
-      return false;
-    }, true);
-  }, 0);
+    // JavaScript経由で確実に非表示にする
+    setTimeout(() => {
+      if (element && element.style) {
+        element.style.setProperty('display', 'none', 'important');
+        element.style.setProperty('visibility', 'hidden', 'important');
+        element.style.setProperty('opacity', '0', 'important');
+        element.style.setProperty('height', '0', 'important');
+        element.style.setProperty('width', '0', 'important');
+        element.style.setProperty('position', 'absolute', 'important');
+        element.style.setProperty('pointer-events', 'none', 'important');
+        element.style.setProperty('z-index', '-9999', 'important');
+        element.style.setProperty('max-height', '0', 'important');
+        element.style.setProperty('max-width', '0', 'important');
+        element.style.setProperty('min-height', '0', 'important');
+        element.style.setProperty('min-width', '0', 'important');
+      }
+      
+      // クリックイベントを無効化
+      element.addEventListener('click', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }, true);
+      
+      // 子要素のイベントも無効化
+      const allChildren = element.querySelectorAll('*');
+      allChildren.forEach(child => {
+        child.addEventListener('click', e => {
+          e.preventDefault();
+          e.stopPropagation();
+          return false;
+        }, true);
+      });
+    }, 0);
+  } catch (e) {
+    log(`要素の非表示処理中にエラー: ${e.message}`, 'error');
+  }
 }
 
 // ページ処理メイン関数
@@ -1620,7 +1601,7 @@ function processPage() {
   }
 }
 
-// メルカリの商品要素を取得するためのセレクター
+// メルカリの商品要素を取得するためのセレクター（大幅に強化）
 function getItemSelectors() {
   return [
     // 検索結果ページの商品
@@ -1633,14 +1614,41 @@ function getItemSelectors() {
     
     // 一般的な商品リンク
     'a[href*="/item/m"]',
+    'div[class*="item-card"], div[class*="ItemCard"]',
+    'div[class*="merItem"], div[class*="itemTile"]',
+    
+    // 商品コンテナ
+    'div[class*="Product"], div[class*="product-"]',
+    'div[class*="ItemContainer"], div[class*="item-container"]',
     
     // 他の可能性のあるセレクター
     '.merItemThumbnail',
     '.merItemCell',
     '.merItem',
+    '.ItemView',
     '.merItemList > li',
     '.merItemList > div',
+    '.search-result-item',
+    '.item-box',
+    '.item-cell',
+    '.ListingCardItem',
+    '.ItemCardRoot',
     '[data-jsx="merItemThumbnail"]'
+  ].join(',');
+}
+
+// 商品タイトルを取得するためのセレクター
+function getTitleSelectors() {
+  return [
+    '[data-testid="thumbnail-item-name"]',
+    '.item-name',
+    '.ItemName',
+    '.item-title',
+    '.item-label',
+    '.item-text',
+    '.Name',
+    'h3',
+    'h4'
   ].join(',');
 }
 
@@ -1648,8 +1656,9 @@ function getItemSelectors() {
 function blockGeneralPage() {
   if (!isFilterActive) return;
 
-  // 商品カードの要素を取得
-  const itemElements = document.querySelectorAll(getItemSelectors() + ':not(.ng-checked)');
+  // 商品カードの要素を取得（未処理のもの）
+  const itemElements = Array.from(document.querySelectorAll(getItemSelectors()))
+    .filter(item => !processedElements.has(item));
   
   // 一度に処理する要素数を制限
   const batchSize = CONFIG.batchSize;
@@ -1660,21 +1669,25 @@ function blockGeneralPage() {
   for (let i = 0; i < Math.min(batchSize, totalItems); i++) {
     const item = itemElements[i];
     
-    // 商品名を取得
-    const itemTitle = item.querySelector('[data-testid="thumbnail-item-name"], .item-name')?.textContent || 
-                      item.textContent || '';
-    
-    // 処理済みマークを付ける
-    item.classList.add('ng-checked');
-    
-    // NGワードチェック
-    if (containsNgWord(itemTitle)) {
-      // 商品をブロック
-      forceHideElement(item);
+    try {
+      // 処理済みとしてマーク
+      processedElements.add(item);
       
-      // ブロックカウントを増やす
-      blockCount++;
-      blockedInBatch++;
+      // 商品名を取得（複数の可能性があるセレクター対応）
+      const titleElement = item.querySelector(getTitleSelectors());
+      const itemTitle = titleElement ? titleElement.textContent : (item.textContent || '');
+      
+      // NGワードチェック
+      if (containsNgWord(itemTitle)) {
+        // 商品をブロック
+        forceHideElement(item);
+        
+        // ブロックカウントを増やす
+        blockCount++;
+        blockedInBatch++;
+      }
+    } catch (e) {
+      log(`商品処理中にエラー: ${e.message}`, 'error');
     }
   }
   
@@ -1693,8 +1706,9 @@ function blockGeneralPage() {
 function blockSearchResults() {
   if (!isFilterActive) return;
 
-  // 商品リストの要素を取得
-  const itemElements = document.querySelectorAll(getItemSelectors() + ':not(.ng-checked)');
+  // 商品リストの要素を取得（未処理のもの）
+  const itemElements = Array.from(document.querySelectorAll(getItemSelectors()))
+    .filter(item => !processedElements.has(item));
   
   if (itemElements.length === 0) {
     return; // 商品が見つからない場合は終了
@@ -1709,21 +1723,25 @@ function blockSearchResults() {
   for (let i = 0; i < Math.min(batchSize, totalItems); i++) {
     const item = itemElements[i];
     
-    // 商品名を取得（複数の可能性があるセレクターに対応）
-    const itemTitle = item.querySelector('[data-testid="thumbnail-item-name"], .item-name')?.textContent || 
-                      item.textContent || '';
-    
-    // 処理済みマークを付ける
-    item.classList.add('ng-checked');
-    
-    // NGワードチェック
-    if (containsNgWord(itemTitle)) {
-      // 商品をブロック
-      forceHideElement(item);
+    try {
+      // 処理済みとしてマーク
+      processedElements.add(item);
       
-      // ブロックカウントを増やす
-      blockCount++;
-      blockedInBatch++;
+      // 商品名を取得（複数の可能性があるセレクター対応）
+      const titleElement = item.querySelector(getTitleSelectors());
+      const itemTitle = titleElement ? titleElement.textContent : (item.textContent || '');
+      
+      // NGワードチェック
+      if (containsNgWord(itemTitle)) {
+        // 商品をブロック
+        forceHideElement(item);
+        
+        // ブロックカウントを増やす
+        blockCount++;
+        blockedInBatch++;
+      }
+    } catch (e) {
+      log(`検索商品処理中にエラー: ${e.message}`, 'error');
     }
   }
   
@@ -1854,10 +1872,18 @@ function startObserving() {
           for (const node of mutation.addedNodes) {
             if (node.nodeType === Node.ELEMENT_NODE) {
               // 商品関連の要素が含まれているか確認
+              if ((node.querySelector && node.querySelector(getItemSelectors())) || 
+                  (node.matches && node.matches(getItemSelectors()))) {
+                significantChanges = true;
+                break;
+              }
+              
+              // 商品要素が多数ある場合の追加チェック
               if (node.querySelector && (
-                  node.querySelector(getItemSelectors()) || 
-                  node.matches && node.matches(getItemSelectors())
-                )) {
+                  node.querySelectorAll('a[href*="/item"]').length > 0 ||
+                  node.querySelectorAll('[class*="item"]').length > 3 ||
+                  node.querySelectorAll('[class*="Item"]').length > 3
+              )) {
                 significantChanges = true;
                 break;
               }
@@ -1883,7 +1909,7 @@ function startObserving() {
     }, CONFIG.observerDebounce);
   });
   
-  // 監視設定（本文のみを監視し、テキスト変更は監視しない）
+  // 監視設定（本文全体を監視）
   observer.observe(document.body, {
     childList: true,
     subtree: true,
@@ -1911,7 +1937,8 @@ function monitorSearchInput() {
   function getSearchElements() {
     const searchInput = document.querySelector('input[type="search"]') || 
                       document.querySelector('input[placeholder*="検索"]') ||
-                      document.querySelector('input[placeholder*="キーワード"]');
+                      document.querySelector('input[placeholder*="キーワード"]') ||
+                      document.querySelector('form input[type="text"]');
     
     const searchForm = searchInput ? searchInput.closest('form') : null;
     
@@ -1962,6 +1989,7 @@ function monitorSearchInput() {
     }
     
     searchInputMonitored = true;
+    log('検索入力の監視を開始しました', 'debug');
   } else {
     // 検索入力フィールドが見つからない場合は後で再試行
     setTimeout(monitorSearchInput, 1000);
@@ -2031,9 +2059,65 @@ window.addEventListener('popstate', function() {
   if (isFilterActive) {
     lastUrl = location.href;
     setTimeout(() => {
+      processedElements.clear();
       processPage();
     }, 100);
   }
+});
+
+// メッセージリスナー（拡張機能アイコンクリック検知など）
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+  log(`メッセージ受信: ${request.action}`, 'debug');
+  
+  try {
+    if (request.action === 'toggleNgWordFilter') {
+      toggleFilter();
+      sendResponse({status: 'success'});
+    } 
+    else if (request.action === 'getNgWordCount') {
+      const totalCount = directNgWords.length + customNgWords.length;
+      sendResponse({count: totalCount});
+    }
+    else if (request.action === 'updateCustomNgWords') {
+      updateCustomNgWords(request.additionalNgWords);
+      sendResponse({status: 'success'});
+    }
+    else if (request.action === 'updateNgWords') {
+      updateCustomNgWords(request.customNgWords);
+    }
+    else if (request.action === 'updateSettings') {
+      if (request.settings) {
+        // 各設定を更新
+        if (request.settings.customNgWords !== undefined) {
+          updateCustomNgWords(request.settings.customNgWords);
+        }
+        if (request.settings.controlPanelVisible !== undefined) {
+          controlPanelVisible = request.settings.controlPanelVisible;
+          const panel = document.getElementById('ng-control-panel');
+          if (panel) {
+            if (controlPanelVisible) {
+              panel.classList.remove('ng-panel-collapsed');
+            } else {
+              panel.classList.add('ng-panel-collapsed');
+            }
+          }
+        }
+      }
+      sendResponse({status: 'success'});
+    }
+    else if (request.action === 'applyFilter') {
+      if (isFilterActive) {
+        processedElements.clear();
+        processPage();
+      }
+      sendResponse({status: 'success'});
+    }
+  } catch (e) {
+    log(`メッセージハンドラでエラー: ${e.message}`, 'error');
+    sendResponse({status: 'error', message: e.message});
+  }
+  
+  return true;
 });
 
 // 初期ロード時の処理
@@ -2064,6 +2148,9 @@ window.addEventListener('load', function() {
       if (isFilterActive) {
         activateFilter();
       }
+      
+      log(`メルカリNGワードブロッカー: 初期化完了（フィルター${isFilterActive ? '有効' : '無効'}）`, 'info');
+      log(`登録NGワード: ${directNgWords.length}件のデフォルトNGワード + ${customNgWords.length}件のカスタムNGワード`, 'info');
     }
   );
 });
