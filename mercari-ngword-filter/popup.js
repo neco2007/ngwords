@@ -1,216 +1,295 @@
 // ポップアップの動作を制御するスクリプト
 
+// デバッグモード（本番環境では false に設定）
+const DEBUG_MODE = false;
+
 // デバッグログ用関数
-function debugLog(message) {
-  console.log(`[NGブロッカー:Popup] ${message}`);
+function log(message, type = 'info') {
+  if (!DEBUG_MODE && type === 'debug') return;
+  
+  const prefix = type === 'error' ? '🛑' : 
+                 type === 'warn' ? '⚠️' : 
+                 '✓';
+  
+  console.log(`[NGブロッカー:Popup] ${prefix} ${message}`);
 }
 
 // 初期化ログ
-debugLog('ポップアップスクリプトを初期化しました');
+log('ポップアップスクリプトを初期化しました');
 
 // DOMが読み込まれたら実行
 document.addEventListener('DOMContentLoaded', function() {
-  debugLog('DOM読み込み完了');
+  log('DOM読み込み完了', 'debug');
   
   // 要素の参照を取得
   const ngWordsInput = document.getElementById('ngWordsInput');
   const saveButton = document.getElementById('saveButton');
   const statusDiv = document.getElementById('status');
   const countDiv = document.getElementById('ngWordCount');
-  const blockModeSelect = document.getElementById('blockMode');
-  const blockStrengthSelect = document.getElementById('blockStrength');
-  const useControlPanelCheckbox = document.getElementById('useControlPanel');
+  const controlPanelCheckbox = document.getElementById('controlPanel');
+  const redirectHomeCheckbox = document.getElementById('redirectHome');
   
+  // 必須要素がない場合はエラー
   if (!ngWordsInput || !saveButton || !statusDiv || !countDiv) {
-    console.error('[NGブロッカー:Popup] 必要なDOM要素が見つかりません');
+    log('必要なDOM要素が見つかりません', 'error');
     return;
   }
   
-  debugLog('DOM要素の参照を取得しました');
+  // タブ切り替え機能の初期化
+  initializeTabs();
   
   // 保存済みの設定を読み込む
   chrome.storage.local.get(
-    ['customNgWords', 'blockMode', 'blockStrength', 'controlPanelVisible'], 
+    [
+      'customNgWords', 
+      'controlPanelVisible', 
+      'redirectOnNgWord',
+      'isFilterActive'
+    ], 
     function(result) {
       // カスタムNGワード
       if (result.customNgWords && Array.isArray(result.customNgWords)) {
         ngWordsInput.value = result.customNgWords.join('\n');
-        debugLog(`ストレージからカスタムNGワードを読み込みました: ${result.customNgWords.length}件`);
-      } else {
-        debugLog('ストレージにカスタムNGワードがありません');
-      }
-      
-      // ブロックモード
-      if (result.blockMode && blockModeSelect) {
-        blockModeSelect.value = result.blockMode;
-        debugLog(`ストレージからブロックモードを読み込みました: ${result.blockMode}`);
-      }
-      
-      // ブロック強度
-      if (result.blockStrength && blockStrengthSelect) {
-        blockStrengthSelect.value = result.blockStrength;
-        debugLog(`ストレージからブロック強度を読み込みました: ${result.blockStrength}`);
+        log(`ストレージからカスタムNGワードを読み込みました: ${result.customNgWords.length}件`, 'debug');
       }
       
       // コントロールパネル表示設定
-      if (useControlPanelCheckbox && result.controlPanelVisible !== undefined) {
-        useControlPanelCheckbox.checked = result.controlPanelVisible;
-        debugLog(`ストレージからコントロールパネル設定を読み込みました: ${result.controlPanelVisible}`);
+      if (controlPanelCheckbox && result.controlPanelVisible !== undefined) {
+        controlPanelCheckbox.checked = result.controlPanelVisible;
+        log(`ストレージからコントロールパネル設定を読み込みました: ${result.controlPanelVisible}`, 'debug');
+      }
+      
+      // リダイレクト設定
+      if (redirectHomeCheckbox && result.redirectOnNgWord !== undefined) {
+        redirectHomeCheckbox.checked = result.redirectOnNgWord;
+        log(`ストレージからリダイレクト設定を読み込みました: ${result.redirectOnNgWord}`, 'debug');
+      }
+      
+      // フィルターの状態表示
+      const filterStatusElem = document.getElementById('filterStatus');
+      if (filterStatusElem && result.isFilterActive !== undefined) {
+        filterStatusElem.textContent = result.isFilterActive ? '有効' : '無効';
+        filterStatusElem.className = result.isFilterActive ? 'status-active' : 'status-inactive';
       }
     }
   );
   
   // 保存ボタンのクリックイベント
   saveButton.addEventListener('click', function() {
-    debugLog('保存ボタンがクリックされました');
+    log('保存ボタンがクリックされました', 'debug');
     saveSettings();
+  });
+  
+  // NGワードの追加（Enterキー）
+  ngWordsInput.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter' && e.ctrlKey) {
+      saveButton.click();
+    }
   });
   
   // 現在のNGワード数を表示
   displayNgWordCount();
   
-  // ブロックモード変更イベント
-  if (blockModeSelect) {
-    blockModeSelect.addEventListener('change', function() {
-      debugLog(`ブロックモードが変更されました: ${this.value}`);
+  // 設定切り替えのイベントリスナー
+  if (controlPanelCheckbox) {
+    controlPanelCheckbox.addEventListener('change', function() {
+      log(`コントロールパネル表示設定が変更されました: ${this.checked}`, 'debug');
+      savePanelSettings();
     });
   }
   
-  // ブロック強度変更イベント
-  if (blockStrengthSelect) {
-    blockStrengthSelect.addEventListener('change', function() {
-      debugLog(`ブロック強度が変更されました: ${this.value}`);
+  if (redirectHomeCheckbox) {
+    redirectHomeCheckbox.addEventListener('change', function() {
+      log(`リダイレクト設定が変更されました: ${this.checked}`, 'debug');
+      saveRedirectSettings();
     });
   }
   
-  // コントロールパネル表示設定変更イベント
-  if (useControlPanelCheckbox) {
-    useControlPanelCheckbox.addEventListener('change', function() {
-      debugLog(`コントロールパネル表示設定が変更されました: ${this.checked}`);
-    });
-  }
-  
-  // NGワードの数を表示する関数
-  function displayNgWordCount() {
-    debugLog('NGワード数を表示します');
+  // タブ切り替え機能
+  function initializeTabs() {
+    const tabs = document.querySelectorAll('.tab');
+    const tabContents = document.querySelectorAll('.tab-content');
     
-    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-      if (tabs[0] && tabs[0].url.includes('mercari.com')) {
-        debugLog(`アクティブタブ: ${tabs[0].url}`);
+    tabs.forEach(tab => {
+      tab.addEventListener('click', function() {
+        // 現在のタブから活性クラスを削除
+        tabs.forEach(t => t.classList.remove('active'));
+        // クリックされたタブに活性クラスを追加
+        this.classList.add('active');
         
-        chrome.tabs.sendMessage(tabs[0].id, {
-          action: 'getNgWordCount'
-        }, function(response) {
-          if (chrome.runtime.lastError) {
-            debugLog(`エラー: ${chrome.runtime.lastError.message}`);
-            countDiv.textContent = 'メルカリNGワードブロッカーが有効です';
-            return;
-          }
+        // すべてのタブコンテンツを非表示に
+        tabContents.forEach(content => {
+          content.classList.remove('active');
+        });
+        
+        // 選択されたタブのコンテンツを表示
+        const tabId = this.getAttribute('data-tab');
+        document.getElementById(tabId + '-tab').classList.add('active');
+      });
+    });
+  }
+  
+// NGワードの数を表示する関数
+function displayNgWordCount() {
+  log('NGワード数を表示します', 'debug');
+  
+  chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+    if (tabs[0] && tabs[0].url.includes('mercari.com')) {
+      chrome.tabs.sendMessage(tabs[0].id, {
+        action: 'getNgWordCount'
+      }, function(response) {
+        if (chrome.runtime.lastError) {
+          log(`エラー: ${chrome.runtime.lastError.message}`, 'debug');
+          countDiv.innerHTML = `
+            <span class="count-info">
+              <span class="count-number">多数</span>のNGワードが設定されています
+            </span>
+            <span class="status-badge">オフライン</span>
+          `;
+          return;
+        }
           
           if (response && response.count !== undefined) {
-            debugLog(`NGワード数を受信: ${response.count}`);
-            countDiv.textContent = `デフォルトで${response.count}個のNGワードが設定されています`;
+            log(`NGワード数を受信: ${response.count}`, 'debug');
+            countDiv.innerHTML = `
+              <span class="count-info">
+                <span class="count-number">${response.count}</span>個のNGワードが設定されています
+              </span>
+              <span class="status-badge">オンライン</span>
+            `;
           } else {
-            debugLog('有効なレスポンスが受信できませんでした');
-            countDiv.textContent = 'デフォルトのNGワードが多数設定されています';
+            log('有効なレスポンスが受信できませんでした', 'debug');
+            countDiv.innerHTML = `
+              <span class="count-info">
+                <span class="count-number">多数</span>のNGワードが設定されています
+              </span>
+              <span class="status-badge">待機中</span>
+            `;
           }
         });
       } else {
-        debugLog('メルカリのタブではありません');
-        countDiv.textContent = 'メルカリを開いてください';
+        log('メルカリのタブではありません', 'debug');
+        countDiv.innerHTML = `
+          <span class="count-info">メルカリを開いてください</span>
+          <span class="status-badge">未接続</span>
+        `;
       }
     });
   }
   
   // 設定を保存する関数
   function saveSettings() {
-    debugLog('設定を保存します');
-    
     // テキストエリアから値を取得
     const text = ngWordsInput.value.trim();
-    debugLog(`テキストエリアから入力を取得: ${text.length}文字`);
+    log(`テキストエリアから入力を取得: ${text.length}文字`, 'debug');
     
     // 改行で分割して追加NGワードの配列を作成
     const additionalNgWords = text.split('\n')
       .map(word => word.trim())
       .filter(word => word.length > 0); // 空行を除外
     
-    debugLog(`処理後のNGワード数: ${additionalNgWords.length}件`);
-    
-    // 他の設定値を取得
-    const settings = {
-      customNgWords: additionalNgWords
-    };
-    
-    // ブロックモード
-    if (blockModeSelect) {
-      settings.blockMode = blockModeSelect.value;
-    }
-    
-    // ブロック強度
-    if (blockStrengthSelect) {
-      settings.blockStrength = blockStrengthSelect.value;
-    }
-    
-    // コントロールパネル表示設定
-    if (useControlPanelCheckbox) {
-      settings.controlPanelVisible = useControlPanelCheckbox.checked;
-    }
+    log(`処理後のNGワード数: ${additionalNgWords.length}件`, 'debug');
     
     // ストレージに保存
-    chrome.storage.local.set(settings, function() {
-      debugLog('設定をストレージに保存しました');
+    chrome.storage.local.set({customNgWords: additionalNgWords}, function() {
+      log('カスタムNGワードをストレージに保存しました', 'debug');
       
-      // 設定をコンテンツスクリプトに送信
+      // 追加のNGワードをコンテンツスクリプトに送信
       chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
         if (tabs[0] && tabs[0].url.includes('mercari.com')) {
-          debugLog(`メッセージ送信: updateSettings - タブID: ${tabs[0].id}`);
+          log(`メッセージ送信: updateCustomNgWords - タブID: ${tabs[0].id}`, 'debug');
           
           chrome.tabs.sendMessage(tabs[0].id, {
-            action: 'updateSettings',
-            settings: settings
+            action: 'updateCustomNgWords',
+            additionalNgWords: additionalNgWords
           }, function(response) {
             if (chrome.runtime.lastError) {
-              debugLog(`エラー: ${chrome.runtime.lastError.message}`);
+              log(`エラー: ${chrome.runtime.lastError.message}`, 'debug');
               showStatus('メルカリページを再読み込みしてください', 'error');
               return;
             }
             
             if (response && response.status === 'success') {
-              debugLog('設定の更新に成功しました');
-              showStatus('設定を更新しました！ページをリロードせずに反映されます', 'success');
+              log('NGワードの更新に成功しました', 'debug');
+              showStatus('NGワードを更新しました！ページをリロードせずに反映されます', 'success');
               
               // 他のタブにも通知
               chrome.runtime.sendMessage({
                 action: 'ngWordsUpdated',
                 customNgWords: additionalNgWords
               });
-              
-              // コントロールパネル設定も通知
-              if (useControlPanelCheckbox) {
-                chrome.runtime.sendMessage({
-                  action: 'controlPanelUpdated',
-                  panelState: {
-                    visible: useControlPanelCheckbox.checked
-                  }
-                });
-              }
             } else {
-              debugLog('設定の更新に失敗しました');
-              showStatus('設定の適用に失敗しました', 'error');
+              log('NGワードの更新に失敗しました', 'debug');
+              showStatus('NGワードの適用に失敗しました', 'error');
             }
           });
         } else {
-          debugLog('メルカリのタブではありません');
+          log('メルカリのタブではありません', 'debug');
           showStatus('メルカリのページを開いてください', 'error');
         }
       });
     });
   }
   
+  // パネル表示設定を保存する関数
+  function savePanelSettings() {
+    const isVisible = controlPanelCheckbox.checked;
+    
+    // ストレージに保存
+    chrome.storage.local.set({controlPanelVisible: isVisible}, function() {
+      log(`コントロールパネル表示設定を保存しました: ${isVisible}`, 'debug');
+      
+      // 他のタブに通知
+      chrome.runtime.sendMessage({
+        action: 'controlPanelUpdated',
+        panelState: {
+          visible: isVisible
+        }
+      });
+      
+      // 現在のタブに適用
+      chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+        if (tabs[0] && tabs[0].url.includes('mercari.com')) {
+          chrome.tabs.sendMessage(tabs[0].id, {
+            action: 'updateSettings',
+            settings: {
+              controlPanelVisible: isVisible
+            }
+          });
+        }
+      });
+      
+      showStatus('パネル表示設定を保存しました', 'success');
+    });
+  }
+  
+  // リダイレクト設定を保存する関数
+  function saveRedirectSettings() {
+    const isEnabled = redirectHomeCheckbox.checked;
+    
+    // ストレージに保存
+    chrome.storage.local.set({redirectOnNgWord: isEnabled}, function() {
+      log(`リダイレクト設定を保存しました: ${isEnabled}`, 'debug');
+      
+      // 現在のタブに適用
+      chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+        if (tabs[0] && tabs[0].url.includes('mercari.com')) {
+          chrome.tabs.sendMessage(tabs[0].id, {
+            action: 'updateSettings',
+            settings: {
+              redirectOnNgWord: isEnabled
+            }
+          });
+        }
+      });
+      
+      showStatus('リダイレクト設定を保存しました', 'success');
+    });
+  }
+  
   // ステータスメッセージを表示する関数
   function showStatus(message, type) {
-    debugLog(`ステータスメッセージを表示: ${message} (${type})`);
+    log(`ステータスメッセージを表示: ${message} (${type})`, 'debug');
     
     statusDiv.textContent = message;
     statusDiv.className = 'status ' + type;

@@ -1,25 +1,46 @@
 {
   "manifest_version": 3,
   "name": "メルカリNGワードブロッカー",
-  "version": "1.0",
-  "description": "メルカリで指定したNGワードを含む商品をブロックします",
-  "permissions": ["storage", "activeTab", "notifications"],
-  "host_permissions": ["https://jp.mercari.com/*"],
+  "version": "1.0.1",
+  "description": "メルカリで指定したNGワードを含む商品を強力にブロックします",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://jp.mercari.com/*",
+    "https://www.mercari.com/*"
+  ],
   "action": {
     "default_icon": {
       "16": "images/icon16.png",
       "48": "images/icon48.png",
       "128": "images/icon128.png"
-    }
+    },
+    "default_popup": "popup.html",
+    "default_title": "メルカリNGワードブロッカー"
   },
   "content_scripts": [
     {
-      "matches": ["https://jp.mercari.com/*"],
+      "matches": [
+        "https://jp.mercari.com/*",
+        "https://www.mercari.com/*"
+      ],
       "js": ["content.js"],
-      "css": ["styles.css"]
+      "css": ["styles.css"],
+      "run_at": "document_end"
     }
   ],
   "background": {
     "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "images/icon16.png",
+    "48": "images/icon48.png",
+    "128": "images/icon128.png"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
   }
 }
