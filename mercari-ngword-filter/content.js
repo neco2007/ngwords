@@ -1,15 +1,34 @@
-// 拡張機能アイコンクリック時のみ動作する単純版
+// メルカリNGワードブロッカー強化版 - コンテンツスクリプト
+
+// デバッグログ用関数
+function debugLog(message) {
+  console.log(`[NGブロッカー:CS] ${message}`);
+}
+
+// エラーログ用関数
+function errorLog(message) {
+  console.error(`[NGブロッカー:CS] エラー: ${message}`);
+}
+
+// 初期化ログ
+debugLog('コンテンツスクリプト強化版を初期化しました');
 
 // グローバル変数
 let isFilterActive = false;  // フィルタの有効/無効状態
 let observer = null;         // MutationObserver
 let observerTimeout = null;  // 監視タイムアウト
 let searchInputMonitored = false; // 検索入力監視状態
+let lastUrl = location.href;  // URL変更検知用
+let customNgWords = [];       // ユーザー設定のNGワード
+let blockCount = 0;           // ブロックした商品数のカウンター
+let blockMode = 'hide';       // ブロックモード: 'hide'=非表示, 'blur'=ぼかし, 'remove'=削除
+let controlPanelVisible = true; // コントロールパネルの表示状態
+let isAdvancedPanelOpen = false; // 詳細パネルの表示状態
+let blockStrength = 'max';    // ブロック強度: 'normal', 'strong', 'max'
 
 // 直接指定するNGワードリスト（確実にブロックしたいもの）
 const directNgWords = [
-  // NGワードのリスト
-    "Copic", "IL BISONTE", "Lindt", "'47", "★wy★", "101 DALMATIANS", "10Gtek", "17906697543", 
+  "Copic", "IL BISONTE", "Lindt", "'47", "★wy★", "101 DALMATIANS", "10Gtek", "17906697543", 
               "2pac", "397395458?", "3CE", "3Dペン", "3M", "5 Seconds Of Summer", "5.11", "52TOYS", 
               "551HORAI", "551蓬莱", "8tail", "A Bathing Ape", "A. LANGE & SOHNE", "A.D.M.J.", 
               "A.LANGE&SOHNE", "A.P.C.", "a.v.v", "A&F", "A＆J", "A＆W", "A|X ARMANI EXCHANGE", 
@@ -719,23 +738,744 @@ const directNgWords = [
               "頭文字D", "風の谷のナウシカ", "風の谷のナウシカ", "風の音", "風林火山", "風立ちぬ", 
               "香蘭社", "鬼滅の刃", "魔女の宅急便", "魔女の宅急便", "魔女宅", "魔法少女まどか☆マギカ", 
               "魔王城でおやすみ", "鳩居堂", "鳩居堂", "鹿島アントラーズ", "黒子のバスケ", "黒鯛工房"
-  ];
+];
 
 // すべて小文字のNGワードリスト（検索用）
 const lowerCaseNgWords = directNgWords.map(word => word.toLowerCase());
+debugLog(`デフォルトNGワード数: ${directNgWords.length}`);
+
+// スタイルを直接挿入（CSSファイルがロードされない場合の対策）
+function injectStyles() {
+  const styleEl = document.createElement('style');
+  styleEl.textContent = `
+    /* NGワードブロッカーのスタイル */
+    .ng-blocked {
+      position: absolute !important;
+      height: 0 !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      border: none !important;
+      overflow: hidden !important;
+      opacity: 0 !important;
+      visibility: hidden !important;
+      display: none !important;
+      pointer-events: none !important;
+      clip: rect(0, 0, 0, 0) !important;
+      width: 0 !important;
+      min-height: 0 !important;
+      min-width: 0 !important;
+      max-height: 0 !important;
+      max-width: 0 !important;
+      transform: scale(0) !important;
+    }
+    
+    .ng-blurred {
+      filter: blur(10px) !important;
+      opacity: 0.3 !important;
+      pointer-events: none !important;
+      transform: scale(0.9) !important;
+      transition: all 0.3s ease !important;
+    }
+    
+    .ng-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255, 0, 0, 0.3);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-weight: bold;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      font-size: 14px;
+      pointer-events: none;
+    }
+    
+    .ng-status-message {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 4px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      z-index: 10000;
+      text-align: center;
+      font-weight: bold;
+      animation: fadeInOut 3s forwards;
+    }
+    
+    .ng-button-disabled {
+      opacity: 0.5 !important;
+      cursor: not-allowed !important;
+      background-color: #ccc !important;
+    }
+    
+    .ng-warning {
+      color: #ff0000;
+      font-weight: bold;
+      margin-right: 10px;
+      animation: pulse 2s infinite;
+    }
+    
+    .ng-product-warning {
+      background-color: #ffeeee;
+      border: 1px solid #ff0000;
+      color: #ff0000;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+    
+    /* コントロールパネルのスタイル */
+    #ng-control-panel {
+      position: fixed;
+      top: 100px;
+      right: 0;
+      width: 280px;
+      background-color: rgba(255, 255, 255, 0.95);
+      border: 1px solid #ccc;
+      border-right: none;
+      border-radius: 8px 0 0 8px;
+      box-shadow: -2px 2px 10px rgba(0, 0, 0, 0.2);
+      z-index: 99999;
+      font-family: Arial, sans-serif;
+      color: #333;
+      transition: transform 0.3s ease;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    
+    #ng-control-panel.ng-panel-collapsed {
+      transform: translateX(calc(100% - 32px));
+    }
+    
+    .ng-panel-header {
+      background-color: #4CAF50;
+      color: white;
+      padding: 8px 12px;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: grab;
+      border-radius: 6px 0 0 0;
+    }
+    
+    .ng-panel-toggle {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      text-align: center;
+      line-height: 24px;
+      cursor: pointer;
+      font-size: 18px;
+    }
+    
+    .ng-panel-body {
+      padding: 10px;
+    }
+    
+    .ng-control-group {
+      margin-bottom: 10px;
+    }
+    
+    .ng-control-label {
+      font-weight: bold;
+      margin-bottom: 5px;
+      display: block;
+    }
+    
+    .ng-control-switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+      margin-right: 10px;
+    }
+    
+    .ng-control-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .ng-control-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      border-radius: 24px;
+      transition: .3s;
+    }
+    
+    .ng-control-slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      border-radius: 50%;
+      transition: .3s;
+    }
+    
+    input:checked + .ng-control-slider {
+      background-color: #4CAF50;
+    }
+    
+    input:checked + .ng-control-slider:before {
+      transform: translateX(26px);
+    }
+    
+    .ng-flex-row {
+      display: flex;
+      align-items: center;
+    }
+    
+    .ng-status-text {
+      margin-left: 10px;
+    }
+    
+    .ng-button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      margin-right: 5px;
+    }
+    
+    .ng-button:hover {
+      background-color: #45a049;
+    }
+    
+    .ng-button.ng-secondary {
+      background-color: #f1f1f1;
+      color: #333;
+      border: 1px solid #ccc;
+    }
+    
+    .ng-button.ng-secondary:hover {
+      background-color: #e8e8e8;
+    }
+    
+    .ng-keyword-list {
+      max-height: 120px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 5px;
+      margin-top: 5px;
+      margin-bottom: 5px;
+      font-size: 12px;
+    }
+    
+    .ng-keyword-item {
+      padding: 3px 5px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .ng-keyword-item:last-child {
+      border-bottom: none;
+    }
+    
+    .ng-keyword-delete {
+      color: #ff0000;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    
+    .ng-counter-display {
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    
+    .ng-mode-select {
+      padding: 5px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      width: 100%;
+      margin-top: 5px;
+    }
+    
+    .ng-advanced-panel {
+      background-color: #f9f9f9;
+      border: 1px solid #eee;
+      border-radius: 4px;
+      padding: 8px;
+      margin-top: 10px;
+      display: none;
+    }
+    
+    .ng-advanced-panel.ng-panel-visible {
+      display: block;
+    }
+    
+    .ng-text-input {
+      width: calc(100% - 10px);
+      padding: 5px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      margin-top: 5px;
+    }
+    
+    @keyframes fadeInOut {
+      0% { opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+  `;
+  document.head.appendChild(styleEl);
+  debugLog('カスタムスタイルを挿入しました');
+}
+
+// スタイルを挿入
+injectStyles();
+
+// コントロールパネルを作成
+function createControlPanel() {
+  // 既存のパネルがあれば削除
+  const existingPanel = document.getElementById('ng-control-panel');
+  if (existingPanel) {
+    existingPanel.remove();
+  }
+  
+  // パネル要素を作成
+  const panel = document.createElement('div');
+  panel.id = 'ng-control-panel';
+  if (!controlPanelVisible) {
+    panel.classList.add('ng-panel-collapsed');
+  }
+  
+  // ヘッダー
+  const header = document.createElement('div');
+  header.className = 'ng-panel-header';
+  header.innerHTML = `
+    <span>メルカリNGワードブロッカー</span>
+    <span class="ng-panel-toggle">${controlPanelVisible ? '◀' : '▶'}</span>
+  `;
+  
+  // ドラッグ機能
+  let isDragging = false;
+  let initialY, initialTop;
+  
+  header.addEventListener('mousedown', (e) => {
+    if (e.target.classList.contains('ng-panel-toggle')) return;
+    isDragging = true;
+    initialY = e.clientY;
+    initialTop = parseInt(window.getComputedStyle(panel).top);
+    e.preventDefault();
+  });
+  
+  document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    const newTop = initialTop + (e.clientY - initialY);
+    if (newTop >= 50 && newTop <= window.innerHeight - 200) {
+      panel.style.top = newTop + 'px';
+    }
+  });
+  
+  document.addEventListener('mouseup', () => {
+    isDragging = false;
+  });
+  
+  // トグルボタンのクリックイベント
+  header.querySelector('.ng-panel-toggle').addEventListener('click', () => {
+    controlPanelVisible = !controlPanelVisible;
+    panel.classList.toggle('ng-panel-collapsed');
+    header.querySelector('.ng-panel-toggle').textContent = controlPanelVisible ? '◀' : '▶';
+  });
+  
+  // パネル本体
+  const body = document.createElement('div');
+  body.className = 'ng-panel-body';
+  
+  // フィルタースイッチ
+  const filterGroup = document.createElement('div');
+  filterGroup.className = 'ng-control-group';
+  filterGroup.innerHTML = `
+    <div class="ng-flex-row">
+      <label class="ng-control-switch">
+        <input type="checkbox" id="ng-filter-toggle" ${isFilterActive ? 'checked' : ''}>
+        <span class="ng-control-slider"></span>
+      </label>
+      <span class="ng-status-text">${isFilterActive ? 'フィルター有効' : 'フィルター無効'}</span>
+    </div>
+  `;
+  
+  // ブロックカウンター
+  const counterGroup = document.createElement('div');
+  counterGroup.className = 'ng-control-group';
+  counterGroup.innerHTML = `
+    <div class="ng-counter-display">ブロック数: <span id="ng-block-count">${blockCount}</span>件</div>
+  `;
+  
+  // ブロックモード選択
+  const modeGroup = document.createElement('div');
+  modeGroup.className = 'ng-control-group';
+  modeGroup.innerHTML = `
+    <label class="ng-control-label">ブロックモード:</label>
+    <select id="ng-block-mode" class="ng-mode-select">
+      <option value="hide" ${blockMode === 'hide' ? 'selected' : ''}>完全に非表示</option>
+      <option value="blur" ${blockMode === 'blur' ? 'selected' : ''}>ぼかし表示</option>
+      <option value="remove" ${blockMode === 'remove' ? 'selected' : ''}>DOM から削除</option>
+    </select>
+  `;
+  
+  // NGワードリスト
+  const keywordGroup = document.createElement('div');
+  keywordGroup.className = 'ng-control-group';
+  keywordGroup.innerHTML = `
+    <label class="ng-control-label">カスタムNGワード:</label>
+    <div id="ng-keyword-list" class="ng-keyword-list">
+      ${customNgWords.length > 0 
+        ? customNgWords.map(word => `
+            <div class="ng-keyword-item">
+              <span>${word}</span>
+              <span class="ng-keyword-delete" data-word="${word}">×</span>
+            </div>
+          `).join('')
+        : '<div class="ng-keyword-item">カスタムNGワードはありません</div>'
+      }
+    </div>
+    <div style="display: flex; margin-top: 5px;">
+      <input type="text" id="ng-new-keyword" class="ng-text-input" placeholder="新しいNGワードを入力" style="flex: 1; margin-right: 5px;">
+      <button id="ng-add-keyword" class="ng-button">追加</button>
+    </div>
+  `;
+  
+  // 詳細設定ボタン
+  const advancedGroup = document.createElement('div');
+  advancedGroup.className = 'ng-control-group';
+  advancedGroup.innerHTML = `
+    <button id="ng-toggle-advanced" class="ng-button ng-secondary">詳細設定 ${isAdvancedPanelOpen ? '▲' : '▼'}</button>
+  `;
+  
+  // 詳細設定パネル
+  const advancedPanel = document.createElement('div');
+  advancedPanel.className = `ng-advanced-panel ${isAdvancedPanelOpen ? 'ng-panel-visible' : ''}`;
+  advancedPanel.innerHTML = `
+    <div class="ng-control-group">
+      <label class="ng-control-label">ブロック強度:</label>
+      <select id="ng-block-strength" class="ng-mode-select">
+        <option value="normal" ${blockStrength === 'normal' ? 'selected' : ''}>通常</option>
+        <option value="strong" ${blockStrength === 'strong' ? 'selected' : ''}>強力</option>
+        <option value="max" ${blockStrength === 'max' ? 'selected' : ''}>最大限</option>
+      </select>
+    </div>
+    <div class="ng-control-group">
+      <button id="ng-rescan-page" class="ng-button">ページを再スキャン</button>
+      <button id="ng-clear-all" class="ng-button ng-secondary">すべてクリア</button>
+    </div>
+    <div class="ng-control-group">
+      <label class="ng-control-label">ステータス:</label>
+      <div id="ng-status-display" style="font-size: 12px; color: #666;">
+        準備完了
+      </div>
+    </div>
+  `;
+  
+  // パネルを組み立て
+  body.appendChild(filterGroup);
+  body.appendChild(counterGroup);
+  body.appendChild(modeGroup);
+  body.appendChild(keywordGroup);
+  body.appendChild(advancedGroup);
+  body.appendChild(advancedPanel);
+  
+  panel.appendChild(header);
+  panel.appendChild(body);
+  document.body.appendChild(panel);
+  
+  // イベントリスナーの設定
+  // フィルタートグル
+  document.getElementById('ng-filter-toggle').addEventListener('change', function(e) {
+    toggleFilter();
+    updateControlPanel();
+  });
+  
+  // ブロックモード変更
+  document.getElementById('ng-block-mode').addEventListener('change', function(e) {
+    blockMode = e.target.value;
+    debugLog(`ブロックモードを変更: ${blockMode}`);
+    
+    // ストレージに保存
+    chrome.storage.local.set({blockMode: blockMode}, function() {
+      debugLog(`ブロックモードをストレージに保存しました: ${blockMode}`);
+    });
+    
+    // ページを再処理
+    if (isFilterActive) {
+      // いったんフィルターをオフにしてから再適用
+      const blockedItems = document.querySelectorAll('.ng-blocked, .ng-blurred');
+      blockedItems.forEach(function(item) {
+        item.classList.remove('ng-blocked');
+        item.classList.remove('ng-blurred');
+        item.removeAttribute('style');
+      });
+      
+      processPage();
+    }
+  });
+  
+  // ブロック強度変更
+  document.getElementById('ng-block-strength').addEventListener('change', function(e) {
+    blockStrength = e.target.value;
+    debugLog(`ブロック強度を変更: ${blockStrength}`);
+    
+    // ストレージに保存
+    chrome.storage.local.set({blockStrength: blockStrength}, function() {
+      debugLog(`ブロック強度をストレージに保存しました: ${blockStrength}`);
+    });
+    
+    // ページを再処理
+    if (isFilterActive) {
+      processPage();
+    }
+  });
+  
+  // 詳細設定パネルの表示/非表示
+  document.getElementById('ng-toggle-advanced').addEventListener('click', function() {
+    isAdvancedPanelOpen = !isAdvancedPanelOpen;
+    advancedPanel.classList.toggle('ng-panel-visible');
+    this.textContent = `詳細設定 ${isAdvancedPanelOpen ? '▲' : '▼'}`;
+  });
+  
+  // ページの再スキャン
+  document.getElementById('ng-rescan-page').addEventListener('click', function() {
+    // 処理済みフラグをリセット
+    const checkedItems = document.querySelectorAll('.ng-checked');
+    checkedItems.forEach(function(item) {
+      item.classList.remove('ng-checked');
+    });
+    
+    // ブロックカウントをリセット
+    blockCount = 0;
+    
+    // ページを再処理
+    processPage();
+    updateControlPanel();
+    
+    // フィードバック
+    showStatusMessage('ページを再スキャンしました');
+  });
+  
+  // すべてクリア
+  document.getElementById('ng-clear-all').addEventListener('click', function() {
+    if (confirm('すべてのブロック設定をクリアしますか？')) {
+      // ブロック解除
+      const blockedItems = document.querySelectorAll('.ng-blocked, .ng-blurred');
+      blockedItems.forEach(function(item) {
+        item.classList.remove('ng-blocked');
+        item.classList.remove('ng-blurred');
+        item.removeAttribute('style');
+      });
+      
+      // 処理済みフラグをリセット
+      const checkedItems = document.querySelectorAll('.ng-checked');
+      checkedItems.forEach(function(item) {
+        item.classList.remove('ng-checked');
+      });
+      
+      // カウントをリセット
+      blockCount = 0;
+      updateControlPanel();
+      
+      // フィードバック
+      showStatusMessage('すべてのブロック設定をクリアしました');
+    }
+  });
+  
+  // NGワードの追加
+  document.getElementById('ng-add-keyword').addEventListener('click', function() {
+    const input = document.getElementById('ng-new-keyword');
+    const keyword = input.value.trim();
+    
+    if (keyword) {
+      // 重複チェック
+      if (customNgWords.includes(keyword) || directNgWords.includes(keyword)) {
+        showStatusMessage('このNGワードは既に登録されています');
+        return;
+      }
+      
+      // 追加
+      customNgWords.push(keyword);
+      updateCustomNgWords(customNgWords);
+      
+      // 入力フィールドをクリア
+      input.value = '';
+      
+      // リストを更新
+      updateKeywordList();
+      
+      // フィードバック
+      showStatusMessage(`NGワード「${keyword}」を追加しました`);
+    }
+  });
+  
+  // NGワードの追加（Enterキー）
+  document.getElementById('ng-new-keyword').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      document.getElementById('ng-add-keyword').click();
+    }
+  });
+  
+  // NGワードの削除
+  document.querySelectorAll('.ng-keyword-delete').forEach(function(elem) {
+    elem.addEventListener('click', function() {
+      const word = this.dataset.word;
+      
+      // 配列から削除
+      customNgWords = customNgWords.filter(item => item !== word);
+      updateCustomNgWords(customNgWords);
+      
+      // リストを更新
+      updateKeywordList();
+      
+      // フィードバック
+      showStatusMessage(`NGワード「${word}」を削除しました`);
+    });
+  });
+  
+  debugLog('コントロールパネルを作成しました');
+}
+
+// キーワードリストを更新
+function updateKeywordList() {
+  const keywordList = document.getElementById('ng-keyword-list');
+  if (!keywordList) return;
+  
+  if (customNgWords.length > 0) {
+    keywordList.innerHTML = customNgWords.map(word => `
+      <div class="ng-keyword-item">
+        <span>${word}</span>
+        <span class="ng-keyword-delete" data-word="${word}">×</span>
+      </div>
+    `).join('');
+    
+    // 削除ボタンにイベントリスナーを追加
+    keywordList.querySelectorAll('.ng-keyword-delete').forEach(function(elem) {
+      elem.addEventListener('click', function() {
+        const word = this.dataset.word;
+        
+        // 配列から削除
+        customNgWords = customNgWords.filter(item => item !== word);
+        updateCustomNgWords(customNgWords);
+        
+        // リストを更新
+        updateKeywordList();
+        
+        // フィードバック
+        showStatusMessage(`NGワード「${word}」を削除しました`);
+      });
+    });
+  } else {
+    keywordList.innerHTML = '<div class="ng-keyword-item">カスタムNGワードはありません</div>';
+  }
+}
+
+// コントロールパネルを更新
+function updateControlPanel() {
+  const toggle = document.getElementById('ng-filter-toggle');
+  const statusText = toggle?.parentElement.nextElementSibling;
+  const blockCountElem = document.getElementById('ng-block-count');
+  const blockModeSelect = document.getElementById('ng-block-mode');
+  const blockStrengthSelect = document.getElementById('ng-block-strength');
+  const statusDisplay = document.getElementById('ng-status-display');
+  
+  if (toggle) toggle.checked = isFilterActive;
+  if (statusText) statusText.textContent = isFilterActive ? 'フィルター有効' : 'フィルター無効';
+  if (blockCountElem) blockCountElem.textContent = blockCount;
+  if (blockModeSelect) blockModeSelect.value = blockMode;
+  if (blockStrengthSelect) blockStrengthSelect.value = blockStrength;
+  if (statusDisplay) {
+    statusDisplay.textContent = isFilterActive 
+      ? `有効: ${blockCount}件ブロック中` 
+      : '無効: フィルターは適用されていません';
+  }
+}
 
 // メッセージリスナー（拡張機能アイコンクリック検知）
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-  if (request.action === 'toggleNgWordFilter') {
-    toggleFilter();
-    sendResponse({status: 'success'});
+  debugLog(`メッセージ受信: ${request.action}`);
+  
+  try {
+    if (request.action === 'toggleNgWordFilter') {
+      debugLog('フィルターを切り替えます');
+      toggleFilter();
+      sendResponse({status: 'success'});
+    } 
+    else if (request.action === 'getNgWordCount') {
+      const totalCount = directNgWords.length + customNgWords.length;
+      debugLog(`NGワード数を返します: ${totalCount}`);
+      sendResponse({count: totalCount});
+    }
+    else if (request.action === 'updateCustomNgWords') {
+      debugLog(`カスタムNGワードを更新します: ${request.additionalNgWords.length}件`);
+      updateCustomNgWords(request.additionalNgWords);
+      sendResponse({status: 'success'});
+    }
+    else if (request.action === 'updateNgWords') {
+      debugLog('他のタブから更新を反映します');
+      updateCustomNgWords(request.customNgWords);
+    }
+  } catch (e) {
+    errorLog(`メッセージハンドラでエラーが発生しました: ${e.message}`);
+    sendResponse({status: 'error', message: e.message});
   }
+  
   return true;
 });
+
+// カスタムNGワードを更新する関数
+function updateCustomNgWords(newWords) {
+  customNgWords = newWords || [];
+  debugLog(`カスタムNGワードを更新しました: ${customNgWords.length}件`);
+  
+  // ローカルストレージに保存
+  chrome.storage.local.set({customNgWords: customNgWords}, function() {
+    debugLog('カスタムNGワードをストレージに保存しました');
+  });
+  
+  // コントロールパネルのキーワードリストを更新
+  updateKeywordList();
+  
+  // フィルタがアクティブならページを再処理
+  if (isFilterActive) {
+    debugLog('フィルターが有効なので再処理を行います');
+    processPage();
+  }
+}
 
 // フィルタのオン/オフを切り替え
 function toggleFilter() {
   isFilterActive = !isFilterActive;
+  debugLog(`フィルター状態を切り替えました: ${isFilterActive ? 'オン' : 'オフ'}`);
   
   if (isFilterActive) {
     // フィルタをオン
@@ -746,10 +1486,25 @@ function toggleFilter() {
     deactivateFilter();
     showStatusMessage('NGワードフィルタをオフにしました');
   }
+  
+  // フィルタの状態を保存
+  chrome.storage.local.set({isFilterActive: isFilterActive}, function() {
+    debugLog(`フィルター状態をストレージに保存しました: ${isFilterActive}`);
+  });
+  
+  // コントロールパネルを更新
+  updateControlPanel();
 }
 
 // フィルタを有効化
 function activateFilter() {
+  debugLog('フィルターを有効化します');
+  
+  // コントロールパネルの作成（まだなければ）
+  if (!document.getElementById('ng-control-panel')) {
+    createControlPanel();
+  }
+  
   // 現在のページを処理
   processPage();
   
@@ -764,13 +1519,19 @@ function activateFilter() {
 
 // フィルタを無効化
 function deactivateFilter() {
+  debugLog('フィルターを無効化します');
+  
   // 監視を停止
   stopObserving();
   
   // ブロックされた商品を表示に戻す
-  const blockedItems = document.querySelectorAll('.ng-blocked');
+  const blockedItems = document.querySelectorAll('.ng-blocked, .ng-blurred');
+  debugLog(`ブロック解除する商品数: ${blockedItems.length}`);
+  
   blockedItems.forEach(function(item) {
     item.classList.remove('ng-blocked');
+    item.classList.remove('ng-blurred');
+    item.removeAttribute('style');
   });
   
   // オーバーレイを削除
@@ -778,37 +1539,119 @@ function deactivateFilter() {
   overlays.forEach(function(overlay) {
     overlay.remove();
   });
+  
+  // 検索ボタンを有効化
+  const disabledButtons = document.querySelectorAll('.ng-button-disabled');
+  disabledButtons.forEach(function(button) {
+    button.disabled = false;
+    button.classList.remove('ng-button-disabled');
+    button.removeAttribute('title');
+  });
+  
+  // 警告表示を削除
+  const warnings = document.querySelectorAll('.ng-warning');
+  warnings.forEach(function(warning) {
+    warning.remove();
+  });
+  
+  // コントロールパネルを更新
+  updateControlPanel();
+  
+  // カウントをリセット
+  blockCount = 0;
 }
 
 // ページ処理メイン関数
 function processPage() {
   // フィルタが無効なら何もしない
   if (!isFilterActive) {
+    debugLog('フィルターが無効なのでページ処理をスキップします');
     return;
   }
   
-  // 検索結果ページの場合のみ処理
+  debugLog(`ページ処理を開始します: ${window.location.href}`);
+  
+  // 現在のページに応じた処理
   if (window.location.href.includes('search')) {
-    // 非同期で実行
+    // 検索結果ページの場合
+    debugLog('検索結果ページを処理します');
     setTimeout(blockSearchResults, 10);
+  } else if (window.location.href.includes('item/')) {
+    // 商品詳細ページの場合
+    debugLog('商品詳細ページを処理します');
+    setTimeout(checkProductPage, 10);
+  } else {
+    // その他のページの場合（トップページやカテゴリページなど）
+    debugLog('その他のページを処理します');
+    setTimeout(blockGeneralPage, 10);
+  }
+}
+
+// 一般ページの商品をブロックする関数（トップページ対応）
+function blockGeneralPage() {
+  // フィルタが無効なら何もしない
+  if (!isFilterActive) return;
+
+  // 商品カードの要素を取得（メルカリのDOM構造に合わせる）
+  const itemElements = document.querySelectorAll('a[data-testid="thumbnail-item-container"]:not(.ng-checked), a[href*="/item/"]:not(.ng-checked)');
+  
+  debugLog(`一般ページの商品要素数: ${itemElements.length}`);
+  
+  // 一度に処理する要素数を制限
+  const batchSize = 30;
+  const totalItems = itemElements.length;
+  
+  // バッチ処理
+  let blockedInBatch = 0;
+  for (let i = 0; i < Math.min(batchSize, totalItems); i++) {
+    const item = itemElements[i];
+    
+    // 商品名を取得（DOM構造に合わせて調整）
+    const itemTitle = item.querySelector('[data-testid="thumbnail-item-name"], .item-name')?.textContent || 
+                      item.textContent || '';
+    
+    // 処理済みマークを付ける
+    item.classList.add('ng-checked');
+    
+    // NGワードチェック
+    if (containsNgWord(itemTitle)) {
+      // 商品をブロック
+      blockItem(item);
+      
+      // ブロックカウントを増やす
+      blockCount++;
+      blockedInBatch++;
+    }
+  }
+  
+  // ブロック数を更新
+  if (blockedInBatch > 0) {
+    debugLog(`${blockedInBatch}件の商品をブロックしました`);
+    updateControlPanel();
+  }
+  
+  // まだ処理していない要素がある場合は次のバッチを予約
+  if (totalItems > batchSize && isFilterActive) {
+    setTimeout(blockGeneralPage, 50);
   }
 }
 
 // 検索結果をブロックする関数
 function blockSearchResults() {
   // フィルタが無効なら何もしない
-  if (!isFilterActive) {
-    return;
-  }
+  if (!isFilterActive) return;
 
   // 商品リストの要素を取得
-  const itemElements = document.querySelectorAll('li[data-testid="item-cell"]:not(.ng-checked)');
+  const itemElements = document.querySelectorAll('li[data-testid="item-cell"]:not(.ng-checked), div[data-testid="item-cell"]:not(.ng-checked)');
+  
+  debugLog(`検索結果の商品要素数: ${itemElements.length}`);
   
   // 一度に処理する要素数を制限
-  const batchSize = 10;
+  const batchSize = 30;
   const totalItems = itemElements.length;
   
   // バッチ処理
+  let blockedInBatch = 0;
   for (let i = 0; i < Math.min(batchSize, totalItems); i++) {
     const item = itemElements[i];
     const itemTitle = item.querySelector('[data-testid="thumbnail-item-name"]')?.textContent || '';
@@ -819,21 +1662,157 @@ function blockSearchResults() {
     // NGワードチェック
     if (containsNgWord(itemTitle)) {
       // 商品をブロック
-      item.classList.add('ng-blocked');
+      blockItem(item);
       
-      // ブロックメッセージを表示
-      const overlay = document.createElement('div');
-      overlay.className = 'ng-overlay';
-      overlay.textContent = 'NGワード';
-      
-      // 元の商品要素にオーバーレイを追加
-      item.appendChild(overlay);
+      // ブロックカウントを増やす
+      blockCount++;
+      blockedInBatch++;
     }
+  }
+  
+  // ブロック数を更新
+  if (blockedInBatch > 0) {
+    debugLog(`${blockedInBatch}件の商品をブロックしました`);
+    updateControlPanel();
   }
   
   // まだ処理していない要素がある場合は次のバッチを予約
   if (totalItems > batchSize && isFilterActive) {
     setTimeout(blockSearchResults, 50);
+  }
+}
+
+// 商品をブロックする共通関数
+function blockItem(item) {
+  debugLog(`商品をブロックします: モード=${blockMode}, 強度=${blockStrength}`);
+  
+  // 選択されたモードに応じた処理
+  switch (blockMode) {
+    case 'hide':
+      // 完全非表示モード
+      applyHideStyles(item);
+      break;
+      
+    case 'blur':
+      // ぼかし表示モード
+      item.classList.add('ng-blurred');
+      break;
+      
+    case 'remove':
+      // DOM から削除
+      if (item.parentNode) {
+        // 非表示にしてから削除（アニメーション防止）
+        applyHideStyles(item);
+        setTimeout(() => {
+          try {
+            item.parentNode.removeChild(item);
+          } catch (e) {
+            errorLog(`要素の削除に失敗しました: ${e.message}`);
+          }
+        }, 100);
+      }
+      break;
+  }
+}
+
+// 非表示スタイルを適用する関数
+function applyHideStyles(item) {
+  // 基本のクラスを追加
+  item.classList.add('ng-blocked');
+  
+  // 強度に応じて追加の処理
+  switch (blockStrength) {
+    case 'normal':
+      // 基本の非表示処理のみ
+      break;
+      
+    case 'strong':
+      // 直接のスタイル属性も設定
+      item.setAttribute('style', 'display: none !important; visibility: hidden !important; opacity: 0 !important; height: 0 !important; overflow: hidden !important;');
+      // 親要素にもクラスを追加
+      if (item.parentElement) {
+        item.parentElement.classList.add('ng-parent-of-blocked');
+      }
+      break;
+      
+    case 'max':
+      // 最大限の非表示処理
+      item.setAttribute('style', 'display: none !important; visibility: hidden !important; opacity: 0 !important; height: 0 !important; width: 0 !important; margin: 0 !important; padding: 0 !important; border: none !important; overflow: hidden !important; position: absolute !important; pointer-events: none !important; clip: rect(0, 0, 0, 0) !important;');
+      
+      // 親要素も処理
+      let parent = item.parentElement;
+      for (let j = 0; j < 3; j++) { // 最大3階層まで遡る
+        if (parent && !parent.classList.contains('ng-blocked')) {
+          parent.classList.add('ng-parent-of-blocked');
+          // コンテナ要素にはスタイルを適用しない（レイアウト崩れ防止）
+          if (j === 0 && !parent.classList.contains('container')) {
+            parent.style.minHeight = '0';
+            parent.style.height = 'auto';
+          }
+          parent = parent.parentElement;
+        } else {
+          break;
+        }
+      }
+      
+      // 非同期でさらに確実に
+      setTimeout(() => {
+        if (item && item.style) {
+          item.style.setProperty('display', 'none', 'important');
+          item.style.setProperty('visibility', 'hidden', 'important');
+          item.style.setProperty('opacity', '0', 'important');
+          item.style.setProperty('height', '0', 'important');
+          item.style.setProperty('width', '0', 'important');
+        }
+      }, 50);
+      break;
+  }
+}
+
+// 商品詳細ページをチェックする関数
+function checkProductPage() {
+  if (!isFilterActive) return;
+  
+  // 商品タイトル要素を取得
+  const titleElement = document.querySelector('h1, [data-testid="name"]');
+  if (!titleElement) {
+    debugLog('商品タイトル要素が見つかりません');
+    return;
+  }
+  
+  const title = titleElement.textContent || '';
+  debugLog(`商品タイトル: ${title}`);
+  
+  // NGワードチェック
+  if (containsNgWord(title)) {
+    debugLog('NGワードを含む商品詳細ページです');
+    
+    // 既存の警告を削除
+    const existingWarning = document.querySelector('.ng-product-warning');
+    if (existingWarning) existingWarning.remove();
+    
+    // 警告メッセージを表示
+    const warningDiv = document.createElement('div');
+    warningDiv.className = 'ng-product-warning';
+    warningDiv.innerHTML = '<strong>警告:</strong> この商品にはNGワードが含まれています';
+    
+    // 警告メッセージを挿入
+    titleElement.after(warningDiv);
+    
+    // ブロックカウントを増やす（詳細ページでも1件としてカウント）
+    if (!document.body.classList.contains('ng-counted')) {
+      blockCount++;
+      document.body.classList.add('ng-counted');
+      updateControlPanel();
+    }
+    
+    // ブロックモードが「削除」の場合は自動的に前のページに戻る
+    if (blockMode === 'remove') {
+      warningDiv.textContent += ' - 3秒後に前のページに戻ります';
+      setTimeout(() => {
+        history.back();
+      }, 3000);
+    }
   }
 }
 
@@ -846,9 +1825,19 @@ function containsNgWord(text) {
   // テキストを小文字に変換して比較
   const lowerText = text.toLowerCase();
   
-  // 単純なincludes検索
+  // デフォルトNGワードチェック
   for (let i = 0; i < lowerCaseNgWords.length; i++) {
     if (lowerText.includes(lowerCaseNgWords[i])) {
+      debugLog(`NGワードが見つかりました: ${lowerCaseNgWords[i]}`);
+      return true;
+    }
+  }
+  
+  // カスタムNGワードチェック
+  for (let i = 0; i < customNgWords.length; i++) {
+    const lowerCustomWord = customNgWords[i].toLowerCase();
+    if (lowerText.includes(lowerCustomWord)) {
+      debugLog(`カスタムNGワードが見つかりました: ${customNgWords[i]}`);
       return true;
     }
   }
@@ -860,8 +1849,11 @@ function containsNgWord(text) {
 function startObserving() {
   if (observer) {
     // 既に監視中なら何もしない
+    debugLog('既に監視中なので、新たな監視は開始しません');
     return;
   }
+  
+  debugLog('DOM変更の監視を開始します');
   
   // MutationObserverの設定
   observer = new MutationObserver(function(mutations) {
@@ -872,7 +1864,16 @@ function startObserving() {
     
     observerTimeout = setTimeout(function() {
       if (isFilterActive) {
-        processPage();
+        // URL変更を検知
+        if (lastUrl !== location.href) {
+          debugLog(`URLが変更されました: ${lastUrl} → ${location.href}`);
+          lastUrl = location.href;
+          processPage();
+        } else {
+          // DOM変更だけの場合も処理
+          debugLog('DOM変更を検知しました');
+          processPage();
+        }
       }
       observerTimeout = null;
     }, 300);
@@ -888,6 +1889,7 @@ function startObserving() {
 // 監視を停止
 function stopObserving() {
   if (observer) {
+    debugLog('DOM変更の監視を停止します');
     observer.disconnect();
     observer = null;
   }
@@ -900,42 +1902,128 @@ function stopObserving() {
 
 // 検索入力フィールドの監視
 function monitorSearchInput() {
-  const searchInput = document.querySelector('input[type="search"]');
+  debugLog('検索入力フィールドの監視を開始します');
+  
+  // 検索要素の取得をより堅牢に
+  function getSearchElements() {
+    const searchInput = document.querySelector('input[type="search"]') || 
+                       document.querySelector('input[placeholder*="検索"]') ||
+                       document.querySelector('input[placeholder*="キーワード"]');
+    
+    const searchForm = searchInput ? searchInput.closest('form') : null;
+    
+    const searchButton = searchForm ? 
+                        (searchForm.querySelector('button[type="submit"]') || 
+                         searchForm.querySelector('button')) : null;
+    
+    return { searchInput, searchForm, searchButton };
+  }
+  
+  // 検索要素を取得
+  let { searchInput, searchForm, searchButton } = getSearchElements();
   
   if (searchInput) {
-    let inputTimeout = null;
+    debugLog(`検索入力フィールドを発見しました: ${searchInput.placeholder || 'プレースホルダなし'}`);
+  } else {
+    debugLog('検索入力フィールドが見つかりませんでした');
+  }
+  
+  // 検索ボタンの状態を更新する関数
+  function updateSearchButtonState(value) {
+    // 要素が見つからない場合は再取得を試みる
+    if (!searchButton) {.0
+      const elements = getSearchElements();
+      searchInput = elements.searchInput;
+      searchForm = elements.searchForm;
+      searchButton = elements.searchButton;
+    }
     
-    searchInput.addEventListener('input', function(e) {
-      // フィルタが無効なら何もしない
-      if (!isFilterActive) {
-        return;
-      }
+    if (!searchButton || !isFilterActive) return;
+    
+    if (containsNgWord(value)) {
+      debugLog(`NGワードを含む検索入力を検知しました: ${value}`);
       
-      // 入力処理を遅延させる
-      if (inputTimeout) {
-        clearTimeout(inputTimeout);
-      }
+      // NGワードが含まれている場合はボタンを無効化
+      searchButton.disabled = true;
+      searchButton.classList.add('ng-button-disabled');
+      searchButton.setAttribute('title', 'NGワードが含まれているため検索できません');
+      searchButton.style.backgroundColor = '#cccccc';
+      searchButton.style.opacity = '0.5';
+      searchButton.style.cursor = 'not-allowed';
       
-      inputTimeout = setTimeout(function() {
-        const value = e.target.value;
+      // 検索ボタンの前に警告表示を追加
+      if (!document.querySelector('.ng-warning')) {
+        const warningSpan = document.createElement('span');
+        warningSpan.className = 'ng-warning';
+        warningSpan.textContent = 'NGワードが含まれています';
+        warningSpan.style.color = 'red';
+        warningSpan.style.fontSize = '12px';
+        warningSpan.style.marginRight = '10px';
+        warningSpan.style.fontWeight = 'bold';
         
-        // 入力値にNGワードが含まれているかチェック
-        if (containsNgWord(value)) {
-          // 入力を空にする
-          e.target.value = '';
-          showStatusMessage('NGワードが含まれているため、検索できません');
+        // 可能な限り適切な位置に挿入
+        if (searchButton.parentNode) {
+          searchButton.parentNode.insertBefore(warningSpan, searchButton);
+        } else if (searchForm) {
+          searchForm.appendChild(warningSpan);
         }
-        
-        inputTimeout = null;
-      }, 200);
+      }
+    } else {
+      // 正常な入力の場合はボタンを有効化
+      searchButton.disabled = false;
+      searchButton.classList.remove('ng-button-disabled');
+      searchButton.removeAttribute('title');
+      searchButton.style.backgroundColor = '';
+      searchButton.style.opacity = '';
+      searchButton.style.cursor = '';
+      
+      // 警告表示を削除
+      const warning = document.querySelector('.ng-warning');
+      if (warning) warning.remove();
+    }
+  }
+  
+  if (searchInput) {
+    // 入力時にリアルタイムでボタン状態を更新
+    searchInput.addEventListener('input', function(e) {
+      if (!isFilterActive) return;
+      
+      const value = e.target.value;
+      updateSearchButtonState(value);
     });
     
+    // フォーム送信時のチェック
+    if (searchForm) {
+      searchForm.addEventListener('submit', function(e) {
+        if (!isFilterActive) return;
+        
+        const value = searchInput.value;
+        if (containsNgWord(value)) {
+          // 検索を防止
+          e.preventDefault();
+          e.stopPropagation();
+          showStatusMessage('NGワードが含まれているため、検索できません');
+          return false;
+        }
+      });
+    }
+    
+    // 初期状態のチェック
+    updateSearchButtonState(searchInput.value);
+    
     searchInputMonitored = true;
+    debugLog('検索入力監視を設定しました');
+  } else {
+    // 検索入力フィールドが見つからない場合は後で再試行
+    debugLog('検索入力フィールドが見つからないため、1秒後に再試行します');
+    setTimeout(monitorSearchInput, 1000);
   }
 }
 
 // ステータスメッセージを表示
 function showStatusMessage(message) {
+  debugLog(`ステータスメッセージを表示: ${message}`);
+  
   // 既存のメッセージがあれば削除
   const existingMessage = document.querySelector('.ng-status-message');
   if (existingMessage) {
@@ -950,6 +2038,17 @@ function showStatusMessage(message) {
   // ボディに追加
   document.body.appendChild(messageDiv);
   
+  // コントロールパネルのステータス表示も更新
+  const statusDisplay = document.getElementById('ng-status-display');
+  if (statusDisplay) {
+    statusDisplay.textContent = message;
+    setTimeout(() => {
+      statusDisplay.textContent = isFilterActive 
+        ? `有効: ${blockCount}件ブロック中` 
+        : '無効: フィルターは適用されていません';
+    }, 3000);
+  }
+  
   // 3秒後に消える
   setTimeout(function() {
     if (messageDiv.parentNode) {
@@ -958,14 +2057,127 @@ function showStatusMessage(message) {
   }, 3000);
 }
 
+// URL変更を検知するための監視
+let urlObserver = new MutationObserver(() => {
+  if (lastUrl !== location.href) {
+    debugLog(`URL変更を検知（監視による）: ${lastUrl} → ${location.href}`);
+    lastUrl = location.href;
+    
+    // URLが変わったら即座にフィルタリング処理を実行
+    if (isFilterActive) {
+      // 短い遅延を設けて確実にDOM要素が生成された後に処理
+      setTimeout(() => {
+        processPage();
+        
+        // 検索入力の監視を再設定（ページ遷移でDOM要素が変わるため）
+        searchInputMonitored = false;
+        monitorSearchInput();
+      }, 100);
+    }
+  }
+});
+
+// URLの変更を監視
+urlObserver.observe(document, {subtree: true, childList: true});
+
+// History APIをフック
+const originalPushState = history.pushState;
+history.pushState = function() {
+  const result = originalPushState.apply(this, arguments);
+  debugLog(`history.pushState が呼び出されました: ${arguments[2]}`);
+  
+  if (lastUrl !== location.href) {
+    lastUrl = location.href;
+    if (isFilterActive) {
+      setTimeout(processPage, 100);
+    }
+  }
+  
+  return result;
+};
+
+const originalReplaceState = history.replaceState;
+history.replaceState = function() {
+  const result = originalReplaceState.apply(this, arguments);
+  debugLog(`history.replaceState が呼び出されました: ${arguments[2]}`);
+  
+  if (lastUrl !== location.href) {
+    lastUrl = location.href;
+    if (isFilterActive) {
+      setTimeout(processPage, 100);
+    }
+  }
+  
+  return result;
+};
+
+// 初期ロード時と履歴変更時にも処理を行う
+window.addEventListener('load', function() {
+  debugLog('ページ読み込み完了（load イベント）');
+  
+  // ストレージから設定を読み込み
+  chrome.storage.local.get(['isFilterActive', 'customNgWords', 'blockMode', 'blockStrength', 'controlPanelVisible'], function(result) {
+    // フィルタの有効/無効状態を復元
+    if (result.isFilterActive !== undefined) {
+      isFilterActive = result.isFilterActive;
+      debugLog(`ストレージからフィルター状態を復元: ${isFilterActive}`);
+    }
+    
+    // カスタムNGワードを復元
+    if (result.customNgWords && Array.isArray(result.customNgWords)) {
+      customNgWords = result.customNgWords;
+      debugLog(`ストレージからカスタムNGワードを復元: ${customNgWords.length}件`);
+    }
+    
+    // ブロックモードを復元
+    if (result.blockMode) {
+      blockMode = result.blockMode;
+      debugLog(`ストレージからブロックモードを復元: ${blockMode}`);
+    }
+    
+    // ブロック強度を復元
+    if (result.blockStrength) {
+      blockStrength = result.blockStrength;
+      debugLog(`ストレージからブロック強度を復元: ${blockStrength}`);
+    }
+    
+    // コントロールパネル表示状態を復元
+    if (result.controlPanelVisible !== undefined) {
+      controlPanelVisible = result.controlPanelVisible;
+      debugLog(`ストレージからコントロールパネル表示状態を復元: ${controlPanelVisible}`);
+    }
+    
+    // コントロールパネルを作成
+    createControlPanel();
+    
+    // フィルタがアクティブなら初期処理を実行
+    if (isFilterActive) {
+      debugLog('フィルターが有効なので初期処理を実行します');
+      activateFilter();
+    }
+  });
+});
+
+window.addEventListener('popstate', function() {
+  debugLog('履歴変更を検知（popstate イベント）');
+  
+  if (isFilterActive) {
+    setTimeout(() => {
+      processPage();
+    }, 100);
+  }
+});
+
 // ページの読み込み後に実行
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('メルカリNGワードブロッカー: 準備完了（拡張機能アイコンをクリックして有効化）');
-  console.log('登録NGワード: ' + directNgWords.length + '件');
+  debugLog('DOM読み込み完了（DOMContentLoaded イベント）');
+  console.log(`メルカリNGワードブロッカー強化版: 準備完了（拡張機能アイコンをクリックして有効化）`);
+  console.log(`登録NGワード: ${directNgWords.length}件`);
 });
 
 // 既にDOMが読み込まれている場合は直接実行
 if (document.readyState === 'interactive' || document.readyState === 'complete') {
-  console.log('メルカリNGワードブロッカー: 準備完了（拡張機能アイコンをクリックして有効化）');
-  console.log('登録NGワード: ' + directNgWords.length + '件');
+  debugLog(`DOM既に読み込み済み（${document.readyState}）`);
+  console.log(`メルカリNGワードブロッカー強化版: 準備完了（拡張機能アイコンをクリックして有効化）`);
+  console.log(`登録NGワード: ${directNgWords.length}件`);
 }

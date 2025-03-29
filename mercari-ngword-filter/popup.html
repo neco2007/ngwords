@@ -7,20 +7,34 @@
   <style>
     body {
       font-family: 'Hiragino Sans', 'Meiryo', sans-serif;
-      width: 300px;
-      padding: 10px;
+      width: 320px;
+      padding: 15px;
+      margin: 0;
     }
     
     h1 {
       font-size: 16px;
       margin-bottom: 15px;
       color: #333;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #eee;
     }
     
     .container {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 15px;
+    }
+    
+    .section {
+      margin-bottom: 15px;
+    }
+    
+    .section-title {
+      font-weight: bold;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: #4CAF50;
     }
     
     textarea {
@@ -31,25 +45,61 @@
       border: 1px solid #ccc;
       border-radius: 4px;
       resize: none;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    
+    textarea:focus {
+      border-color: #4CAF50;
+      outline: none;
+      box-shadow: 0 0 3px rgba(76, 175, 80, 0.3);
     }
     
     .description {
       font-size: 12px;
       color: #666;
       margin-bottom: 10px;
+      line-height: 1.4;
+    }
+    
+    .form-group {
+      margin-bottom: 12px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 13px;
+      color: #555;
+    }
+    
+    select {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background-color: white;
+      font-size: 13px;
+    }
+    
+    select:focus {
+      border-color: #4CAF50;
+      outline: none;
     }
     
     button {
       background-color: #4CAF50;
       color: white;
       border: none;
-      padding: 8px 12px;
+      padding: 10px 16px;
       text-align: center;
       text-decoration: none;
       display: inline-block;
       font-size: 14px;
       border-radius: 4px;
       cursor: pointer;
+      width: 100%;
+      transition: background-color 0.2s;
     }
     
     button:hover {
@@ -60,6 +110,8 @@
       margin-top: 10px;
       font-size: 12px;
       color: #666;
+      text-align: center;
+      min-height: 18px;
     }
     
     .status.success {
@@ -71,10 +123,72 @@
     }
     
     .info {
-      font-size: 12px;
+      font-size: 13px;
       color: #333;
+      margin-bottom: 15px;
+      background-color: #f5f5f5;
+      padding: 8px;
+      border-radius: 4px;
+      line-height: 1.4;
+    }
+    
+    .checkbox-container {
+      display: flex;
+      align-items: center;
       margin-bottom: 10px;
+    }
+    
+    .checkbox-container input[type="checkbox"] {
+      margin-right: 8px;
+    }
+    
+    .checkbox-container label {
+      margin-bottom: 0;
+      font-size: 13px;
+      display: inline;
+    }
+    
+    .tab-container {
+      display: flex;
+      margin-bottom: 15px;
+      border-bottom: 1px solid #ddd;
+    }
+    
+    .tab {
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 13px;
+      border: 1px solid transparent;
+      border-bottom: none;
+      border-radius: 4px 4px 0 0;
+      margin-right: 5px;
+      background-color: #f5f5f5;
+    }
+    
+    .tab.active {
+      background-color: white;
+      border-color: #ddd;
+      position: relative;
+      color: #4CAF50;
       font-weight: bold;
+    }
+    
+    .tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background-color: white;
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
     }
   </style>
 </head>
@@ -83,21 +197,79 @@
   
   <div class="container">
     <div id="ngWordCount" class="info">
-      デフォルトのNGワードが多数設定されています
+      デフォルトのNGワードが設定されています
     </div>
     
-    <p class="description">
-      ブランド名などのNGワードは既に自動的にブロックされています。<br>
-      以下に追加でブロックしたいNGワードを1行ずつ入力してください。
-    </p>
+    <div class="tab-container">
+      <div class="tab active" data-tab="basic">基本設定</div>
+      <div class="tab" data-tab="advanced">詳細設定</div>
+    </div>
     
-    <textarea id="ngWordsInput" placeholder="例：偽物&#10;コピー品&#10;レプリカ"></textarea>
+    <!-- 基本設定タブ -->
+    <div id="basic-tab" class="tab-content active">
+      <div class="section">
+        <div class="section-title">NGワード設定</div>
+        <p class="description">
+          ブランド名などのNGワードは既に自動的にブロックされています。<br>
+          以下に追加でブロックしたいNGワードを1行ずつ入力してください。
+        </p>
+        
+        <textarea id="ngWordsInput" placeholder="例：偽物&#10;コピー品&#10;レプリカ"></textarea>
+      </div>
+    </div>
     
-    <button id="saveButton">追加のNGワードを適用</button>
+    <!-- 詳細設定タブ -->
+    <div id="advanced-tab" class="tab-content">
+      <div class="section">
+        <div class="section-title">表示設定</div>
+        
+        <div class="form-group">
+          <label for="blockMode">ブロックモード:</label>
+          <select id="blockMode">
+            <option value="hide">完全に非表示</option>
+            <option value="blur">ぼかし表示</option>
+            <option value="remove">DOMから削除</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="blockStrength">ブロック強度:</label>
+          <select id="blockStrength">
+            <option value="normal">通常</option>
+            <option value="strong">強力</option>
+            <option value="max">最大限</option>
+          </select>
+        </div>
+        
+        <div class="checkbox-container">
+          <input type="checkbox" id="useControlPanel" checked>
+          <label for="useControlPanel">コントロールパネルを表示する</label>
+        </div>
+      </div>
+    </div>
+    
+    <button id="saveButton">設定を保存</button>
     
     <div id="status" class="status"></div>
   </div>
   
   <script src="popup.js"></script>
+  <script>
+    // タブ切り替え
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', function() {
+        // タブをアクティブにする
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        
+        // タブコンテンツを表示
+        const tabId = this.getAttribute('data-tab');
+        document.querySelectorAll('.tab-content').forEach(content => {
+          content.classList.remove('active');
+        });
+        document.getElementById(tabId + '-tab').classList.add('active');
+      });
+    });
+  </script>
 </body>
 </html>

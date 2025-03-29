@@ -1,53 +1,316 @@
-/* NGワードブロッカーのスタイル */
+/* NGワードブロッカーの外部スタイルシート */
 
 /* ブロックされた商品のスタイル */
 .ng-blocked {
-    position: relative;
-    filter: blur(3px);
-    pointer-events: none !important;
-    display: none; /* 完全に非表示にする */
-  }
-  
-  /* オーバーレイのスタイル */
-  .ng-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(255, 0, 0, 0.3);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: white;
-    font-weight: bold;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
-    z-index: 1000;
-    font-size: 14px;
-    pointer-events: none;
-  }
-  
-  /* ステータスメッセージのスタイル */
-  .ng-status-message {
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: rgba(0, 0, 0, 0.7);
-    color: white;
-    padding: 10px 20px;
-    border-radius: 4px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-    z-index: 10000;
-    text-align: center;
-    font-weight: bold;
-    animation: fadeInOut 3s forwards;
-  }
-  
-  /* フェードイン/アウトのアニメーション */
-  @keyframes fadeInOut {
-    0% { opacity: 0; }
-    10% { opacity: 1; }
-    90% { opacity: 1; }
-    100% { opacity: 0; }
-  }
+  position: absolute !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  display: none !important;
+  pointer-events: none !important;
+  clip: rect(0, 0, 0, 0) !important;
+  width: 0 !important;
+  min-height: 0 !important;
+  min-width: 0 !important;
+  max-height: 0 !important;
+  max-width: 0 !important;
+  transform: scale(0) !important;
+}
+
+/* ぼかし表示のスタイル */
+.ng-blurred {
+  filter: blur(10px) !important;
+  opacity: 0.3 !important;
+  pointer-events: none !important;
+  transform: scale(0.9) !important;
+  transition: all 0.3s ease !important;
+}
+
+/* 親要素のスタイル */
+.ng-parent-of-blocked {
+  min-height: 0 !important;
+  height: auto !important;
+}
+
+/* オーバーレイのスタイル */
+.ng-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 0, 0, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+  font-size: 14px;
+  pointer-events: none;
+}
+
+/* ステータスメッセージのスタイル */
+.ng-status-message {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  z-index: 10000;
+  text-align: center;
+  font-weight: bold;
+  animation: fadeInOut 3s forwards;
+}
+
+/* 無効化された検索ボタンのスタイル */
+.ng-button-disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  background-color: #ccc !important;
+}
+
+/* NGワード警告ラベルのスタイル */
+.ng-warning {
+  color: #ff0000;
+  font-weight: bold;
+  margin-right: 10px;
+  animation: pulse 2s infinite;
+}
+
+/* 商品詳細ページの警告 */
+.ng-product-warning {
+  background-color: #ffeeee;
+  border: 1px solid #ff0000;
+  color: #ff0000;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+/* コントロールパネルのスタイル */
+#ng-control-panel {
+  position: fixed;
+  top: 100px;
+  right: 0;
+  width: 280px;
+  background-color: rgba(255, 255, 255, 0.95);
+  border: 1px solid #ccc;
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+  box-shadow: -2px 2px 10px rgba(0, 0, 0, 0.2);
+  z-index: 99999;
+  font-family: Arial, sans-serif;
+  color: #333;
+  transition: transform 0.3s ease;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+#ng-control-panel.ng-panel-collapsed {
+  transform: translateX(calc(100% - 32px));
+}
+
+.ng-panel-header {
+  background-color: #4CAF50;
+  color: white;
+  padding: 8px 12px;
+  font-weight: bold;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: grab;
+  border-radius: 6px 0 0 0;
+}
+
+.ng-panel-toggle {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  text-align: center;
+  line-height: 24px;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.ng-panel-body {
+  padding: 10px;
+}
+
+.ng-control-group {
+  margin-bottom: 10px;
+}
+
+.ng-control-label {
+  font-weight: bold;
+  margin-bottom: 5px;
+  display: block;
+}
+
+.ng-control-switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+  margin-right: 10px;
+}
+
+.ng-control-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.ng-control-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  border-radius: 24px;
+  transition: .3s;
+}
+
+.ng-control-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  border-radius: 50%;
+  transition: .3s;
+}
+
+input:checked + .ng-control-slider {
+  background-color: #4CAF50;
+}
+
+input:checked + .ng-control-slider:before {
+  transform: translateX(26px);
+}
+
+.ng-flex-row {
+  display: flex;
+  align-items: center;
+}
+
+.ng-status-text {
+  margin-left: 10px;
+}
+
+.ng-button {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  margin-right: 5px;
+}
+
+.ng-button:hover {
+  background-color: #45a049;
+}
+
+.ng-button.ng-secondary {
+  background-color: #f1f1f1;
+  color: #333;
+  border: 1px solid #ccc;
+}
+
+.ng-button.ng-secondary:hover {
+  background-color: #e8e8e8;
+}
+
+.ng-keyword-list {
+  max-height: 120px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 5px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  font-size: 12px;
+}
+
+.ng-keyword-item {
+  padding: 3px 5px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ng-keyword-item:last-child {
+  border-bottom: none;
+}
+
+.ng-keyword-delete {
+  color: #ff0000;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.ng-counter-display {
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.ng-mode-select {
+  padding: 5px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  width: 100%;
+  margin-top: 5px;
+}
+
+.ng-advanced-panel {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  padding: 8px;
+  margin-top: 10px;
+  display: none;
+}
+
+.ng-advanced-panel.ng-panel-visible {
+  display: block;
+}
+
+.ng-text-input {
+  width: calc(100% - 10px);
+  padding: 5px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  margin-top: 5px;
+}
+
+/* アニメーション */
+@keyframes fadeInOut {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
