@@ -4,8 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>メルカリNGワードブロッカー</title>
-  <!-- Chart.jsライブラリを読み込み -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
   <style>
     body {
       font-family: 'Hiragino Sans', 'Meiryo', sans-serif;
@@ -572,6 +570,480 @@
     <div id="status" class="status"></div>
   </div>
   
+  <!-- シンプルチャートライブラリ -->
+  <script>
+    // SimpleCharts - 軽量チャートライブラリ
+    window.SimpleCharts = {
+      // デフォルトのカラーパレット
+      colors: [
+        '#4CAF50', '#2196F3', '#FFC107', '#FF5722', '#9C27B0',
+        '#3F51B5', '#E91E63', '#009688', '#795548', '#607D8B'
+      ],
+      
+      // 棒グラフを描画
+      bar: function(canvas, data) {
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        
+        // キャンバスをクリア
+        ctx.clearRect(0, 0, width, height);
+        
+        if (!data || !data.labels || !data.datasets || data.datasets.length === 0) {
+          return;
+        }
+        
+        const dataset = data.datasets[0];
+        const values = dataset.data;
+        const labels = data.labels;
+        
+        // グラフエリアの設定
+        const padding = 40;
+        const chartWidth = width - padding * 2;
+        const chartHeight = height - padding * 2;
+        
+        // 最大値を計算
+        const maxValue = Math.max(...values);
+        
+        // グラフ背景
+        ctx.fillStyle = '#f9f9f9';
+        ctx.fillRect(padding, padding, chartWidth, height - padding * 2);
+        
+        // X軸とY軸を描画
+        ctx.strokeStyle = '#ddd';
+        ctx.beginPath();
+        ctx.moveTo(padding, height - padding);
+        ctx.lineTo(width - padding, height - padding);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(padding, padding);
+        ctx.lineTo(padding, height - padding);
+        ctx.stroke();
+        
+        // バーの数
+        const barCount = values.length;
+        const barWidth = (chartWidth / barCount) * 0.7;
+        const barSpacing = (chartWidth / barCount) * 0.3;
+        
+        // バーを描画
+        values.forEach((value, index) => {
+          const barHeight = (value / maxValue) * chartHeight;
+          const x = padding + (index * (barWidth + barSpacing)) + barSpacing / 2;
+          const y = height - padding - barHeight;
+          
+          // バー
+          ctx.fillStyle = dataset.backgroundColor || this.colors[0];
+          if (Array.isArray(dataset.backgroundColor)) {
+            ctx.fillStyle = dataset.backgroundColor[index % dataset.backgroundColor.length];
+          }
+          ctx.fillRect(x, y, barWidth, barHeight);
+          
+          // 値
+          ctx.fillStyle = '#333';
+          ctx.textAlign = 'center';
+          ctx.font = '10px Arial';
+          ctx.fillText(value, x + barWidth / 2, y - 5);
+          
+          // ラベル
+          ctx.fillText(labels[index], x + barWidth / 2, height - padding + 15);
+        });
+      },
+      
+      // 円グラフを描画
+      pie: function(canvas, data) {
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        
+        // キャンバスをクリア
+        ctx.clearRect(0, 0, width, height);
+        
+        if (!data || !data.labels || !data.datasets || data.datasets.length === 0) {
+          return;
+        }
+        
+        const dataset = data.datasets[0];
+        const values = dataset.data;
+        const labels = data.labels;
+        
+        // 中心と半径
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const radius = Math.min(width, height) / 2 - 30;
+        
+        // 合計値
+        const total = values.reduce((sum, value) => sum + value, 0);
+        
+        // 各スライスを描画
+        let startAngle = 0;
+        let legendY = 20;
+        
+        values.forEach((value, index) => {
+          // 角度を計算
+          const sliceAngle = (value / total) * 2 * Math.PI;
+          
+          // カラー選択
+          let color = this.colors[index % this.colors.length];
+          if (dataset.backgroundColor && Array.isArray(dataset.backgroundColor)) {
+            color = dataset.backgroundColor[index % dataset.backgroundColor.length];
+          }
+          
+          // 弧を描画
+          ctx.beginPath();
+          ctx.moveTo(centerX, centerY);
+          ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle);
+          ctx.closePath();
+          
+          // 塗りつぶし
+          ctx.fillStyle = color;
+          ctx.fill();
+          
+          // スライスに境界線
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          
+          // パーセント表示の位置を計算
+          const middleAngle = startAngle + sliceAngle / 2;
+          const textRadius = radius * 0.7;
+          const textX = centerX + Math.cos(middleAngle) * textRadius;
+          const textY = centerY + Math.sin(middleAngle) * textRadius;
+          
+          // パーセントを表示
+          const percent = Math.round((value / total) * 100);
+          ctx.fillStyle = '#fff';
+          ctx.font = 'bold 12px Arial';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          if (percent > 5) { // 5%以上のスライスにだけテキスト表示
+            ctx.fillText(percent + '%', textX, textY);
+          }
+          
+          // 凡例
+          ctx.fillStyle = color;
+          ctx.fillRect(width - 150, legendY, 15, 15);
+          
+          ctx.fillStyle = '#333';
+          ctx.font = '12px Arial';
+          ctx.textAlign = 'left';
+          ctx.fillText(`${labels[index]} (${value})`, width - 130, legendY + 7);
+          
+          legendY += 20;
+          startAngle += sliceAngle;
+        });
+      },
+      
+      // 比較棒グラフ
+      comparison: function(canvas, data) {
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        
+        // キャンバスをクリア
+        ctx.clearRect(0, 0, width, height);
+        
+        if (!data || !data.labels || !data.datasets || data.datasets.length < 2) {
+          return;
+        }
+        
+        const labels = data.labels;
+        const datasets = data.datasets;
+        
+        // グラフエリアの設定
+        const padding = 40;
+        const chartWidth = width - padding * 2;
+        const chartHeight = height - padding * 2;
+        
+        // 最大値を計算（全データセットを考慮）
+        let maxValue = 0;
+        datasets.forEach(dataset => {
+          const datasetMax = Math.max(...dataset.data);
+          if (datasetMax > maxValue) maxValue = datasetMax;
+        });
+        
+        // グラフ背景
+        ctx.fillStyle = '#f9f9f9';
+        ctx.fillRect(padding, padding, chartWidth, height - padding * 2);
+        
+        // X軸とY軸を描画
+        ctx.strokeStyle = '#ddd';
+        ctx.beginPath();
+        ctx.moveTo(padding, height - padding);
+        ctx.lineTo(width - padding, height - padding);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(padding, padding);
+        ctx.lineTo(padding, height - padding);
+        ctx.stroke();
+        
+        // グループのカウント
+        const groupCount = labels.length;
+        const groupWidth = chartWidth / groupCount;
+        const barWidth = groupWidth * 0.35; // バーが2つあるので狭く
+        
+        // データセットごとにバーを描画
+        datasets.forEach((dataset, datasetIndex) => {
+          const values = dataset.data;
+          
+          values.forEach((value, index) => {
+            const barHeight = (value / maxValue) * chartHeight;
+            const x = padding + (index * groupWidth) + (datasetIndex * barWidth) + (groupWidth * 0.15);
+            const y = height - padding - barHeight;
+            
+            // バー
+            ctx.fillStyle = dataset.backgroundColor || this.colors[datasetIndex];
+            ctx.fillRect(x, y, barWidth, barHeight);
+            
+            // 値
+            ctx.fillStyle = '#333';
+            ctx.textAlign = 'center';
+            ctx.font = '10px Arial';
+            ctx.fillText(value, x + barWidth / 2, y - 5);
+          });
+        });
+        
+        // X軸のラベル
+        labels.forEach((label, index) => {
+          const x = padding + (index * groupWidth) + (groupWidth / 2);
+          ctx.fillStyle = '#333';
+          ctx.textAlign = 'center';
+          ctx.font = '10px Arial';
+          // ラベルが長い場合は省略
+          const displayLabel = label.length > 10 ? label.substring(0, 8) + '...' : label;
+          ctx.fillText(displayLabel, x, height - padding + 15);
+        });
+        
+        // 凡例
+        const legendX = width - 150;
+        let legendY = 20;
+        
+        datasets.forEach((dataset, index) => {
+          ctx.fillStyle = dataset.backgroundColor || this.colors[index];
+          ctx.fillRect(legendX, legendY, 15, 15);
+          
+          ctx.fillStyle = '#333';
+          ctx.textAlign = 'left';
+          ctx.font = '12px Arial';
+          ctx.fillText(dataset.label, legendX + 20, legendY + 12);
+          
+          legendY += 25;
+        });
+      }
+    };
+    
+    // Chart互換API（popup.jsで利用されるため）
+    window.Chart = function(ctx, config) {
+      this.ctx = ctx;
+      this.config = config;
+      this.type = config.type;
+      this.data = config.data;
+      this.options = config.options || {};
+      
+      this.render = function() {
+        const canvas = this.ctx.canvas;
+        // キャンバスサイズを設定
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = 250;
+        
+        if (this.type === 'bar') {
+          SimpleCharts.bar(canvas, this.data);
+        } else if (this.type === 'pie') {
+          SimpleCharts.pie(canvas, this.data);
+        } else if (this.type === 'comparison') {
+          SimpleCharts.comparison(canvas, this.data);
+        }
+      };
+      
+      this.destroy = function() {
+        // クリーンアップ処理
+        const canvas = this.ctx.canvas;
+        this.ctx.clearRect(0, 0, canvas.width, canvas.height);
+      };
+      
+      // 初回描画
+      this.render();
+      
+      return this;
+    };
+  </script>
+  
+  <!-- popup.js 関数オーバーライド -->
+  <script>
+    // ページの読み込みが完了した後に実行
+    document.addEventListener('DOMContentLoaded', function() {
+      // グローバル変数
+      window.trendChart = null;
+      
+      // データヘルパー関数（popup.jsで必要なため定義）
+      window.getPriceRanges = function(items) {
+        // 価格帯の定義
+        const ranges = [
+          { max: 1000, label: '～1,000円' },
+          { max: 3000, label: '～3,000円' },
+          { max: 5000, label: '～5,000円' },
+          { max: 10000, label: '～10,000円' },
+          { max: 30000, label: '～30,000円' },
+          { max: 50000, label: '～50,000円' },
+          { max: Infinity, label: '50,000円～' }
+        ];
+        
+        // 各価格帯ごとにカウント
+        const counts = new Array(ranges.length).fill(0);
+        
+        items.forEach(item => {
+          const price = item.rawPrice || parseInt(item.price.replace(/,/g, ''));
+          
+          for (let i = 0; i < ranges.length; i++) {
+            if (price <= ranges[i].max) {
+              counts[i]++;
+              break;
+            }
+          }
+        });
+        
+        return {
+          labels: ranges.map(r => r.label),
+          counts: counts
+        };
+      };
+      
+      window.getCategoryDistribution = function(items) {
+        // カテゴリごとに集計
+        const categoryCounts = {};
+        
+        items.forEach(item => {
+          const category = item.category || '不明';
+          categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+        });
+        
+        // 上位カテゴリを抽出（最大6カテゴリ、それ以外は「その他」としてまとめる）
+        const sortedCategories = Object.entries(categoryCounts)
+          .sort((a, b) => b[1] - a[1]);
+        
+        const topCategories = sortedCategories.slice(0, 6);
+        const otherCount = sortedCategories.slice(6)
+          .reduce((sum, [_, count]) => sum + count, 0);
+        
+        const labels = topCategories.map(([category]) => category);
+        const counts = topCategories.map(([_, count]) => count);
+        
+        // 「その他」があれば追加
+        if (otherCount > 0) {
+          labels.push('その他');
+          counts.push(otherCount);
+        }
+        
+        return { labels, counts };
+      };
+      
+      window.getAmazonComparison = function(items) {
+        // Amazon価格データがある商品のみ抽出
+        const itemsWithAmazon = items.filter(item => 
+          item.amazonInfo && item.amazonInfo.price
+        ).slice(0, 10); // 最大10件まで
+        
+        const labels = itemsWithAmazon.map(item => 
+          item.name.length > 10 ? item.name.substring(0, 10) + '...' : item.name
+        );
+        
+        const mercariPrices = itemsWithAmazon.map(item => 
+          item.rawPrice || parseInt(item.price.replace(/,/g, ''))
+        );
+        
+        const amazonPrices = itemsWithAmazon.map(item => 
+          parseInt(item.amazonInfo.price.replace(/,/g, ''))
+        );
+        
+        return {
+          labels,
+          mercariPrices,
+          amazonPrices
+        };
+      };
+      
+      // renderChart 関数をオーバーライド
+      window.renderChart = function(data, chartType) {
+        const canvas = document.getElementById('trend-chart');
+        const ctx = canvas.getContext('2d');
+        
+        // 既存のチャートがあれば破棄
+        if (window.trendChart) {
+          window.trendChart.destroy();
+          window.trendChart = null;
+        }
+        
+        let chartData;
+        let chartConfig;
+        
+        switch (chartType) {
+          case 'price':
+            // 価格分布チャート
+            const priceRanges = window.getPriceRanges(data.items);
+            chartData = {
+              labels: priceRanges.labels,
+              datasets: [{
+                label: '価格分布',
+                data: priceRanges.counts,
+                backgroundColor: '#4CAF50'
+              }]
+            };
+            chartConfig = {
+              type: 'bar',
+              data: chartData
+            };
+            break;
+            
+          case 'category':
+            // カテゴリ分布チャート
+            const categories = window.getCategoryDistribution(data.items);
+            chartData = {
+              labels: categories.labels,
+              datasets: [{
+                label: 'カテゴリ分布',
+                data: categories.counts,
+                backgroundColor: SimpleCharts.colors
+              }]
+            };
+            chartConfig = {
+              type: 'pie',
+              data: chartData
+            };
+            break;
+            
+          case 'comparison':
+            // Amazonとの価格比較チャート
+            const comparisonData = window.getAmazonComparison(data.items);
+            chartData = {
+              labels: comparisonData.labels,
+              datasets: [
+                {
+                  label: 'メルカリ価格',
+                  data: comparisonData.mercariPrices,
+                  backgroundColor: '#4CAF50'
+                },
+                {
+                  label: 'Amazon価格',
+                  data: comparisonData.amazonPrices,
+                  backgroundColor: '#FF9800'
+                }
+              ]
+            };
+            chartConfig = {
+              type: 'comparison', // カスタムタイプ
+              data: chartData
+            };
+            break;
+        }
+        
+        // チャートを作成（カスタムChart関数で）
+        window.trendChart = new Chart(ctx, chartConfig);
+      };
+    });
+  </script>
+  
+  <!-- popup.jsを最後に読み込み -->
   <script src="popup.js"></script>
 </body>
 </html>

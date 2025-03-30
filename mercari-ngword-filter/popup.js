@@ -782,6 +782,19 @@ document.addEventListener('DOMContentLoaded', function() {
         trendChart.destroy();
       }
       
+      // Chart が定義されているか確認
+      if (typeof Chart === 'undefined') {
+        console.error('Chart.js ライブラリが読み込まれていません。');
+        const errorDiv = document.createElement('div');
+        errorDiv.style.textAlign = 'center';
+        errorDiv.style.color = 'red';
+        errorDiv.style.padding = '20px';
+        errorDiv.textContent = 'グラフライブラリの読み込みに失敗しました。ページを再読み込みしてください。';
+        document.getElementById('chart-container').innerHTML = '';
+        document.getElementById('chart-container').appendChild(errorDiv);
+        return;
+      }
+      
       // チャートタイプに応じたデータとオプションを生成
       let chartData, chartOptions;
       
