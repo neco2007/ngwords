@@ -1258,14 +1258,6 @@ function initPanelEnhancement() {
   }
 }
 
-// 初期化
-document.addEventListener('DOMContentLoaded', initPanelEnhancement);
-
-// すでにDOMが読み込まれている場合も実行
-if (document.readyState === 'interactive' || document.readyState === 'complete') {
-  initPanelEnhancement();
-}
-
 // パネルがドラッグされた時に常時表示タブも移動させる
 document.addEventListener('mousemove', function(e) {
   // ドラッグ中にパネルの位置が変わった場合
@@ -1277,13 +1269,14 @@ document.addEventListener('mousemove', function(e) {
     permanentTab.style.top = (panelTop + 10) + 'px';
   }
 });
-  
-  document.head.appendChild(styleEl);
-  log('スタイルを適用しました', 'debug');
 
+// 初期化
+document.addEventListener('DOMContentLoaded', initPanelEnhancement);
 
-// スタイルを挿入
-injectStyles();
+// すでにDOMが読み込まれている場合も実行
+if (document.readyState === 'interactive' || document.readyState === 'complete') {
+  initPanelEnhancement();
+}
 
 // コントロールパネルを作成
 function createControlPanel() {
