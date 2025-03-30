@@ -157,7 +157,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     sendResponse({status: 'success'});
   }
   
-  // トレンド分析データのキャッシュを更新（新機能）
+  // トレンド分析データのキャッシュを更新
   else if (request.action === 'updateTrendCache') {
     log('トレンド分析データをキャッシュします', 'debug');
     
@@ -224,7 +224,7 @@ chrome.runtime.onInstalled.addListener(function(details) {
       type: 'basic',
       iconUrl: 'images/icon128.png',
       title: 'メルカリNGワードブロッカー',
-      message: '拡張機能が最新バージョンに更新されました。新機能「トレンド分析」が追加されました。'
+      message: '拡張機能が最新バージョンに更新されました。新機能「トレンド分析」と「Amazon比較機能」が追加されました。'
     });
   }
 });

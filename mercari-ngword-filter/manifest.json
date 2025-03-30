@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "メルカリNGワードブロッカー",
-  "version": "1.0.1",
-  "description": "メルカリで指定したNGワードを含む商品を強力にブロックします",
+  "version": "2.0.0",
+  "description": "メルカリで指定したNGワードを含む商品を強力にブロックし、トレンド分析機能を提供します",
   "permissions": [
     "storage",
     "activeTab",
@@ -10,7 +10,8 @@
   ],
   "host_permissions": [
     "https://jp.mercari.com/*",
-    "https://www.mercari.com/*"
+    "https://www.mercari.com/*",
+    "https://www.amazon.co.jp/*"
   ],
   "action": {
     "default_icon": {
