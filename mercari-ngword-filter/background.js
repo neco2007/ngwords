@@ -30,7 +30,7 @@ function isMercariDomain(url) {
 chrome.action.onClicked.addListener(function(tab) {
   log(`アイコンがクリックされました: ${tab.url}`, 'debug');
   
-  // メルカリのページの場合のみ処理
+  // メルカリのページの場合
   if (isMercariDomain(tab.url)) {
     // タブがロード済みか確認
     chrome.tabs.get(tab.id, function(currentTab) {
@@ -157,6 +157,19 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     sendResponse({status: 'success'});
   }
   
+  // トレンド分析データのキャッシュを更新（新機能）
+  else if (request.action === 'updateTrendCache') {
+    log('トレンド分析データをキャッシュします', 'debug');
+    
+    // データをキャッシュ
+    chrome.storage.local.set({
+      trendCache: request.trendData,
+      trendCacheExpiry: Date.now() + (60 * 60 * 1000) // 1時間キャッシュ
+    });
+    
+    sendResponse({status: 'success'});
+  }
+  
   return true; // 非同期レスポンスを有効化
 });
 
@@ -211,7 +224,7 @@ chrome.runtime.onInstalled.addListener(function(details) {
       type: 'basic',
       iconUrl: 'images/icon128.png',
       title: 'メルカリNGワードブロッカー',
-      message: '拡張機能が最新バージョンに更新されました。パフォーマンスが向上し、検索フィルターが強化されています。'
+      message: '拡張機能が最新バージョンに更新されました。新機能「トレンド分析」が追加されました。'
     });
   }
 });

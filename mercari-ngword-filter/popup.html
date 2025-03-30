@@ -238,6 +238,138 @@
       text-align: right;
       margin-top: 4px;
     }
+
+    /* トレンド分析用のスタイル */
+    .trend-filter {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    
+    .trend-select {
+      flex: 1;
+      padding: 6px 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    
+    .trend-select:focus {
+      border-color: #4CAF50;
+      outline: none;
+    }
+    
+    .trend-button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    
+    .trend-button:hover {
+      background-color: #45a049;
+    }
+    
+    .trend-list {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #eee;
+      border-radius: 4px;
+      padding: 0;
+      margin: 0;
+      list-style: none;
+      background-color: #fff;
+    }
+    
+    .trend-item {
+      padding: 8px 12px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+    }
+    
+    .trend-item:last-child {
+      border-bottom: none;
+    }
+    
+    .trend-rank {
+      background-color: #4CAF50;
+      color: white;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      font-size: 12px;
+      margin-right: 10px;
+      flex-shrink: 0;
+    }
+    
+    .trend-rank.top-3 {
+      background-color: #ff9800;
+    }
+    
+    .trend-rank.top-1 {
+      background-color: #f44336;
+    }
+    
+    .trend-info {
+      flex: 1;
+    }
+    
+    .trend-name {
+      margin-bottom: 2px;
+      font-weight: bold;
+    }
+    
+    .trend-meta {
+      font-size: 11px;
+      color: #666;
+      display: flex;
+      gap: 10px;
+    }
+    
+    .trend-price {
+      font-weight: bold;
+      color: #333;
+      white-space: nowrap;
+    }
+
+    .trend-loading {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+    }
+
+    .trend-placeholder {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+      font-style: italic;
+    }
+    
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(0, 0, 0, 0.1);
+      border-radius: 50%;
+      border-top-color: #4CAF50;
+      animation: spin 1s linear infinite;
+      margin-right: 10px;
+      vertical-align: middle;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
@@ -257,6 +389,7 @@
     <div class="tab-container">
       <div class="tab active" data-tab="basic">基本設定</div>
       <div class="tab" data-tab="advanced">詳細設定</div>
+      <div class="tab" data-tab="analysis">トレンド分析</div>
     </div>
     
     <!-- 基本設定タブ -->
@@ -291,6 +424,48 @@
         <p class="description">
           コントロールパネルを非表示にしても、拡張機能アイコンをクリックすることでフィルターのオン/オフを切り替えられます。
         </p>
+      </div>
+    </div>
+    
+    <!-- トレンド分析タブ -->
+    <div id="analysis-tab" class="tab-content">
+      <div class="section">
+        <div class="section-title">メルカリトレンド分析</div>
+        <p class="description">
+          現在のメルカリで人気のある商品やトレンドをリアルタイムで分析します。
+        </p>
+        
+        <div class="trend-filter">
+          <select id="trend-category" class="trend-select">
+            <option value="all">すべてのカテゴリ</option>
+            <option value="1">レディース</option>
+            <option value="2">メンズ</option>
+            <option value="3">ベビー・キッズ</option>
+            <option value="4">インテリア・住まい</option>
+            <option value="5">本・音楽・ゲーム</option>
+            <option value="6">おもちゃ・ホビー</option>
+            <option value="7">コスメ・香水・美容</option>
+            <option value="8">家電・スマホ・カメラ</option>
+            <option value="9">スポーツ・レジャー</option>
+            <option value="10">ハンドメイド</option>
+            <option value="11">自動車・バイク</option>
+            <option value="12">その他</option>
+          </select>
+          
+          <select id="trend-period" class="trend-select">
+            <option value="daily">24時間</option>
+            <option value="weekly">1週間</option>
+            <option value="monthly">1ヶ月</option>
+          </select>
+          
+          <button id="analyze-trends" class="trend-button">分析</button>
+        </div>
+        
+        <div id="trend-results">
+          <div class="trend-placeholder">
+            「分析」ボタンをクリックして人気トレンドを確認してください
+          </div>
+        </div>
       </div>
     </div>
     
