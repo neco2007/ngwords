@@ -896,7 +896,7 @@ function injectStyles() {
     }
     
     #ng-control-panel.ng-panel-collapsed {
-      transform: translateX(calc(100% - 40px));
+      transform: translateX(280px) !important;
     }
     
     .ng-panel-header {
@@ -1088,6 +1088,30 @@ function injectStyles() {
       margin-top: 5px;
     }
     
+    /* パネルトグル用の追加スタイル */
+    .ng-permanent-toggle {
+      position: fixed;
+      right: 0;
+      width: 24px;
+      height: 24px;
+      background-color: #4CAF50;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      border-radius: 4px 0 0 4px;
+      box-shadow: -2px 2px 5px rgba(0, 0, 0, 0.2);
+      z-index: 100000;
+      font-weight: bold;
+      transition: all 0.3s ease;
+      font-size: 14px;
+    }
+    
+    .ng-permanent-toggle.panel-visible {
+      right: 280px;
+    }
+    
     @keyframes fadeInOut {
       0% { opacity: 0; }
       10% { opacity: 1; }
@@ -1101,9 +1125,162 @@ function injectStyles() {
       100% { opacity: 1; }
     }
   `;
+  
   document.head.appendChild(styleEl);
   log('スタイルを適用しました', 'debug');
 }
+
+// スタイルを挿入
+injectStyles();
+
+// 常時表示される制御タブを作成
+function createPermanentToggleTab() {
+  // 既存のタブがあれば削除
+  const existingTab = document.getElementById('ng-permanent-toggle');
+  if (existingTab) existingTab.remove();
+  
+  // パネル要素の参照を取得
+  const panel = document.getElementById('ng-control-panel');
+  if (!panel) return;
+  
+  // パネルの位置を取得
+  const panelTop = parseInt(window.getComputedStyle(panel).top) || 100;
+  
+  // 新しいタブを作成
+  const toggleTab = document.createElement('div');
+  toggleTab.id = 'ng-permanent-toggle';
+  toggleTab.className = 'ng-permanent-toggle ' + (controlPanelVisible ? 'panel-visible' : 'panel-hidden');
+  toggleTab.innerHTML = controlPanelVisible ? '◀' : '▶';
+  toggleTab.title = controlPanelVisible ? 'パネルを非表示にする' : 'パネルを表示する';
+  toggleTab.style.top = (panelTop + 10) + 'px';
+  
+  // クリックイベント
+  toggleTab.addEventListener('click', function() {
+    togglePanelVisibility();
+  });
+  
+  // ボディに追加
+  document.body.appendChild(toggleTab);
+  
+  return toggleTab;
+}
+
+// 既存パネルを拡張する関数
+function enhanceControlPanel() {
+  // 既存パネルの参照を取得
+  const panel = document.getElementById('ng-control-panel');
+  if (!panel) return;
+  
+  // 常時表示タブを追加
+  createPermanentToggleTab();
+  
+  // パネルヘッダーの参照を取得
+  const header = panel.querySelector('.ng-panel-header');
+  if (!header) return;
+  
+  // 既存のトグルボタンのイベントを書き換え
+  const toggleButton = header.querySelector('.ng-panel-toggle');
+  if (toggleButton) {
+    // 既存のイベントリスナーを削除（可能な場合）
+    const newToggleButton = toggleButton.cloneNode(true);
+    toggleButton.parentNode.replaceChild(newToggleButton, toggleButton);
+    
+    // 新しいイベントリスナーを追加
+    newToggleButton.addEventListener('click', function() {
+      togglePanelVisibility();
+    });
+  }
+}
+
+// パネル表示状態を切り替え
+function togglePanelVisibility() {
+  // 表示状態を反転
+  controlPanelVisible = !controlPanelVisible;
+  
+  // パネルの表示状態を更新
+  const panel = document.getElementById('ng-control-panel');
+  if (panel) {
+    if (controlPanelVisible) {
+      panel.classList.remove('ng-panel-collapsed');
+    } else {
+      panel.classList.add('ng-panel-collapsed');
+    }
+  }
+  
+  // パネル内のトグルボタンも更新
+  const toggleButton = panel?.querySelector('.ng-panel-toggle');
+  if (toggleButton) {
+    toggleButton.textContent = controlPanelVisible ? '◀' : '▶';
+  }
+  
+  // 常時表示タブも更新
+  const permanentTab = document.getElementById('ng-permanent-toggle');
+  if (permanentTab) {
+    permanentTab.textContent = controlPanelVisible ? '◀' : '▶';
+    permanentTab.className = 'ng-permanent-toggle ' + (controlPanelVisible ? 'panel-visible' : 'panel-hidden');
+    // タブの位置も調整
+    permanentTab.style.right = controlPanelVisible ? '280px' : '0';
+  }
+  
+  // 設定を保存
+  chrome.storage.local.set({controlPanelVisible: controlPanelVisible});
+}
+
+// DOMの監視
+let panelEnhanceInterval = null;
+
+// パネルが生成された後に拡張機能を適用
+function initPanelEnhancement() {
+  // 最初の実行
+  if (document.getElementById('ng-control-panel')) {
+    enhanceControlPanel();
+  }
+  
+  // 定期的にチェック（パネルが後から生成される場合のため）
+  if (!panelEnhanceInterval) {
+    panelEnhanceInterval = setInterval(function() {
+      const panel = document.getElementById('ng-control-panel');
+      const permanentTab = document.getElementById('ng-permanent-toggle');
+      
+      // パネルがあってタブがまだなければ拡張する
+      if (panel && !permanentTab) {
+        enhanceControlPanel();
+      }
+    }, 1000);
+    
+    // 一定時間後に監視を停止（10秒後）
+    setTimeout(function() {
+      if (panelEnhanceInterval) {
+        clearInterval(panelEnhanceInterval);
+        panelEnhanceInterval = null;
+      }
+    }, 10000);
+  }
+}
+
+// 初期化
+document.addEventListener('DOMContentLoaded', initPanelEnhancement);
+
+// すでにDOMが読み込まれている場合も実行
+if (document.readyState === 'interactive' || document.readyState === 'complete') {
+  initPanelEnhancement();
+}
+
+// パネルがドラッグされた時に常時表示タブも移動させる
+document.addEventListener('mousemove', function(e) {
+  // ドラッグ中にパネルの位置が変わった場合
+  const panel = document.getElementById('ng-control-panel');
+  const permanentTab = document.getElementById('ng-permanent-toggle');
+  
+  if (panel && permanentTab) {
+    const panelTop = parseInt(window.getComputedStyle(panel).top) || 100;
+    permanentTab.style.top = (panelTop + 10) + 'px';
+  }
+});
+  
+  document.head.appendChild(styleEl);
+  log('スタイルを適用しました', 'debug');
+
 
 // スタイルを挿入
 injectStyles();
