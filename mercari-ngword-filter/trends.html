@@ -1,0 +1,1904 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>メルカリ×Google トレンド分析</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #ff4081;
+      --primary-dark: #c60055;
+      --primary-light: #ff79b0;
+      --secondary: #2196f3;
+      --secondary-dark: #0069c0;
+      --secondary-light: #6ec6ff;
+      --accent: #ffc107;
+      --text-primary: #212121;
+      --text-secondary: #757575;
+      --background: #f5f5f5;
+      --background-card: #ffffff;
+      --border: #e0e0e0;
+      --success: #4caf50;
+      --info: #2196f3;
+      --warning: #ff9800;
+      --error: #f44336;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background-color: var(--background);
+      color: var(--text-primary);
+      line-height: 1.6;
+    }
+
+    header {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      padding: 1.5rem;
+      color: white;
+      text-align: center;
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+      position: relative;
+      z-index: 10;
+    }
+
+    .header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header-title {
+      font-size: 1.8rem;
+      font-weight: 700;
+    }
+
+    .header-subtitle {
+      font-size: 1rem;
+      opacity: 0.9;
+      margin-top: 0.5rem;
+    }
+
+    .header-logo {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logo-icon {
+      font-size: 2.5rem;
+    }
+
+    .header-search {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .search-input {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .search-button {
+      background-color: var(--accent);
+      color: var(--text-primary);
+      border: none;
+      border-radius: 4px;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      transition: background-color 0.2s;
+    }
+
+    .search-button:hover {
+      background-color: #ffca28;
+    }
+
+    .main-container {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+      margin-bottom: 1.5rem;
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 0.5rem;
+      color: var(--primary-dark);
+    }
+
+    .trends-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .trend-card {
+      background-color: var(--background-card);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .trend-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+    }
+
+    .trend-header {
+      padding: 1rem;
+      background: linear-gradient(to right, var(--secondary-light), var(--secondary));
+      color: white;
+      font-size: 1.2rem;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .trend-rank {
+      background-color: var(--accent);
+      color: var(--text-primary);
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      font-size: 1.1rem;
+    }
+
+    .trend-image {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .trend-content {
+      padding: 1rem;
+    }
+
+    .trend-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .trend-description {
+      margin-bottom: 1rem;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    .trend-stats {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .trend-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      padding: 0.5rem;
+      background-color: #f8f8f8;
+      border-radius: 4px;
+    }
+
+    .stat-value {
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--primary);
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    .trend-footer {
+      padding: 1rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .trend-source {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    .trend-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .trend-button {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .button-primary {
+      background-color: var(--primary);
+      color: white;
+    }
+
+    .button-primary:hover {
+      background-color: var(--primary-dark);
+    }
+
+    .button-secondary {
+      background-color: var(--secondary);
+      color: white;
+    }
+
+    .button-secondary:hover {
+      background-color: var(--secondary-dark);
+    }
+
+    .filters-section {
+      background-color: var(--background-card);
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .filters-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .filter-label {
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .filter-select, .filter-input {
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+
+    .filter-select:focus, .filter-input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .filters-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 1.5rem;
+      gap: 1rem;
+    }
+
+    .filter-button {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .button-apply {
+      background-color: var(--primary);
+      color: white;
+      font-weight: 500;
+    }
+
+    .button-apply:hover {
+      background-color: var(--primary-dark);
+    }
+
+    .button-reset {
+      background-color: #f1f1f1;
+      color: var(--text-secondary);
+    }
+
+    .button-reset:hover {
+      background-color: #e0e0e0;
+    }
+
+    .chart-section {
+      background-color: var(--background-card);
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .chart-container {
+      height: 400px;
+      margin-top: 1.5rem;
+    }
+
+    .chart-tabs {
+      display: flex;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .chart-tab {
+      padding: 0.75rem 1.5rem;
+      cursor: pointer;
+      font-weight: 500;
+      color: var(--text-secondary);
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .chart-tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    .chart-tab:hover {
+      color: var(--primary-light);
+    }
+
+    .related-keywords {
+      margin-top: 2rem;
+    }
+
+    .keywords-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .keyword-tag {
+      background-color: var(--secondary-light);
+      color: var(--text-primary);
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .keyword-tag:hover {
+      background-color: var(--secondary);
+      color: white;
+      transform: translateY(-2px);
+    }
+
+    .insight-card {
+      background-color: var(--background-card);
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      margin-bottom: 1.5rem;
+    }
+
+    .insight-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: var(--secondary-dark);
+    }
+
+    .insight-content {
+      display: flex;
+      gap: 1.5rem;
+    }
+
+    .insight-chart {
+      flex: 1;
+      min-height: 250px;
+    }
+
+    .insight-data {
+      flex: 1;
+    }
+
+    .insight-stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+
+    .insight-stat {
+      background-color: #f8f8f8;
+      padding: 1rem;
+      border-radius: 6px;
+    }
+
+    .insight-label {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+    }
+
+    .insight-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--secondary);
+    }
+
+    .google-trends-integration {
+      display: flex;
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    .google-trends-container {
+      flex: 2;
+      background-color: var(--background-card);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .google-trends-header {
+      padding: 1rem;
+      background-color: #4285F4;
+      color: white;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .google-trends-content {
+      min-height: 400px;
+      padding: 1rem;
+    }
+
+    .google-trends-insights {
+      flex: 1;
+      background-color: var(--background-card);
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .insights-list {
+      margin-top: 1rem;
+    }
+
+    .insight-item {
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .insight-item:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .insight-item-title {
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .insight-item-description {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+
+    .top-trends-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .top-trend-item {
+      background-color: var(--background-card);
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      transition: transform 0.2s;
+    }
+
+    .top-trend-item:hover {
+      transform: translateX(5px);
+    }
+
+    .top-trend-rank {
+      background-color: var(--primary);
+      color: white;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+
+    .top-trend-info {
+      flex: 1;
+    }
+
+    .top-trend-title {
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+
+    .top-trend-metrics {
+      display: flex;
+      gap: 1rem;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    .top-trend-metric {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .top-trend-growth {
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+
+    .positive-growth {
+      background-color: #e8f5e9;
+      color: var(--success);
+    }
+
+    .negative-growth {
+      background-color: #ffebee;
+      color: var(--error);
+    }
+
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 300px;
+    }
+
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid rgba(255, 64, 129, 0.2);
+      border-top: 5px solid var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 1rem;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    footer {
+      background-color: #212121;
+      color: white;
+      padding: 2rem 1.5rem;
+      margin-top: 4rem;
+    }
+
+    .footer-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-copyright {
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 1.5rem;
+    }
+
+    .footer-link {
+      color: white;
+      text-decoration: none;
+      opacity: 0.8;
+      transition: opacity 0.2s;
+    }
+
+    .footer-link:hover {
+      opacity: 1;
+    }
+
+    @media (max-width: 768px) {
+      .header-content {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .header-logo {
+        justify-content: center;
+        margin-bottom: 1rem;
+      }
+
+      .filters-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .insight-content {
+        flex-direction: column;
+      }
+
+      .google-trends-integration {
+        flex-direction: column;
+      }
+
+      .footer-content {
+        flex-direction: column;
+        gap: 1.5rem;
+        text-align: center;
+      }
+
+      .footer-links {
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-content">
+      <div class="header-logo">
+        <div class="logo-icon">📈</div>
+        <div>
+          <h1 class="header-title">メルカリ トレンド分析</h1>
+          <p class="header-subtitle">Google Trendsデータを活用した商品動向分析</p>
+        </div>
+      </div>
+    </div>
+    <div class="header-search">
+      <input type="text" class="search-input" placeholder="トレンドを検索（例：スニーカー、Nintendo Switch...）">
+      <button class="search-button">分析</button>
+    </div>
+  </header>
+
+  <div class="main-container">
+    <section class="filters-section">
+      <h2 class="section-title">フィルター設定</h2>
+      <div class="filters-grid">
+        <div class="filter-group">
+          <label class="filter-label">期間</label>
+          <select class="filter-select" id="period-filter">
+            <option value="1">過去24時間</option>
+            <option value="7" selected>過去7日間</option>
+            <option value="30">過去30日間</option>
+            <option value="90">過去3ヶ月</option>
+            <option value="365">過去1年</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">カテゴリー</label>
+          <select class="filter-select" id="category-filter">
+            <option value="all" selected>全てのカテゴリー</option>
+            <option value="fashion">ファッション</option>
+            <option value="electronics">家電・スマホ</option>
+            <option value="hobby">ホビー・ゲーム</option>
+            <option value="beauty">コスメ・美容</option>
+            <option value="sports">スポーツ・レジャー</option>
+            <option value="home">インテリア・住まい</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">価格帯</label>
+          <select class="filter-select" id="price-filter">
+            <option value="all" selected>全ての価格帯</option>
+            <option value="0-5000">5,000円以下</option>
+            <option value="5000-10000">5,000円〜10,000円</option>
+            <option value="10000-30000">10,000円〜30,000円</option>
+            <option value="30000-">30,000円以上</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">並び替え</label>
+          <select class="filter-select" id="sort-filter">
+            <option value="trend" selected>トレンド順</option>
+            <option value="growth">急上昇順</option>
+            <option value="price-asc">価格（安い順）</option>
+            <option value="price-desc">価格（高い順）</option>
+          </select>
+        </div>
+      </div>
+      <div class="filters-actions">
+        <button class="filter-button button-reset">リセット</button>
+        <button class="filter-button button-apply">適用</button>
+      </div>
+    </section>
+
+    <section class="chart-section">
+      <h2 class="section-title">トレンド分析チャート</h2>
+      <div class="chart-tabs">
+        <div class="chart-tab active" data-chart="trends">検索トレンド</div>
+        <div class="chart-tab" data-chart="prices">価格推移</div>
+        <div class="chart-tab" data-chart="category">カテゴリー分布</div>
+        <div class="chart-tab" data-chart="comparison">Amazon比較</div>
+      </div>
+      <div class="chart-container" id="trends-chart">
+        <!-- チャート描画エリア -->
+        <div class="loading-container">
+          <div class="loading-spinner"></div>
+          <div class="loading-text">データを読み込み中...</div>
+        </div>
+      </div>
+      <div class="related-keywords">
+        <h3>関連キーワード</h3>
+        <div class="keywords-list">
+          <div class="keyword-tag">Nintendo Switch</div>
+          <div class="keyword-tag">PlayStation 5</div>
+          <div class="keyword-tag">Xbox Series X</div>
+          <div class="keyword-tag">ゲーミングPC</div>
+          <div class="keyword-tag">ゲーミングモニター</div>
+          <div class="keyword-tag">ゲーミングヘッドセット</div>
+          <div class="keyword-tag">ゲーミングキーボード</div>
+          <div class="keyword-tag">ゲーミングマウス</div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="section-title">人気トレンドTOP 100</h2>
+      <div class="insight-card">
+        <h3 class="insight-title">トレンド分析インサイト</h3>
+        <div class="insight-content">
+          <div class="insight-chart">
+            <!-- インサイトチャート描画エリア -->
+            ここにグラフが表示されます
+          </div>
+          <div class="insight-data">
+            <p>現在のトップトレンドから見る市場の動向分析です。直近のデータによると、ゲーム関連商品と家電製品の需要が高まっています。特に中古の任天堂スイッチとPlayStation 5の検索量が急増しています。</p>
+            <div class="insight-stats">
+              <div class="insight-stat">
+                <div class="insight-label">平均検索成長率</div>
+                <div class="insight-value">+42%</div>
+              </div>
+              <div class="insight-stat">
+                <div class="insight-label">平均価格変動</div>
+                <div class="insight-value">-5.2%</div>
+              </div>
+              <div class="insight-stat">
+                <div class="insight-label">検索ボリューム</div>
+                <div class="insight-value">143K</div>
+              </div>
+              <div class="insight-stat">
+                <div class="insight-label">予測需要スコア</div>
+                <div class="insight-value">89/100</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="top-trends-list">
+        <!-- ここからトップ商品リスト -->
+        <div class="top-trend-item">
+          <div class="top-trend-rank">1</div>
+          <div class="top-trend-info">
+            <div class="top-trend-title">Nintendo Switch 有機ELモデル</div>
+            <div class="top-trend-metrics">
+              <div class="top-trend-metric">
+                <span>検索ボリューム:</span>
+                <span>24,500</span>
+              </div>
+              <div class="top-trend-metric">
+                <span>平均価格:</span>
+                <span>¥32,800</span>
+              </div>
+            </div>
+          </div>
+          <div class="top-trend-growth positive-growth">+156%</div>
+        </div>
+
+        <div class="top-trend-item">
+          <div class="top-trend-rank">2</div>
+          <div class="top-trend-info">
+            <div class="top-trend-title">PlayStation 5 デジタル・エディション</div>
+            <div class="top-trend-metrics">
+              <div class="top-trend-metric">
+                <span>検索ボリューム:</span>
+                <span>22,300</span>
+              </div>
+              <div class="top-trend-metric">
+                <span>平均価格:</span>
+                <span>¥49,500</span>
+              </div>
+            </div>
+          </div>
+          <div class="top-trend-growth positive-growth">+132%</div>
+        </div>
+
+        <div class="top-trend-item">
+          <div class="top-trend-rank">3</div>
+          <div class="top-trend-info">
+            <div class="top-trend-title">AirPods Pro (第2世代)</div>
+            <div class="top-trend-metrics">
+              <div class="top-trend-metric">
+                <span>検索ボリューム:</span>
+                <span>18,900</span>
+              </div>
+              <div class="top-trend-metric">
+                <span>平均価格:</span>
+                <span>¥27,500</span>
+              </div>
+            </div>
+          </div>
+          <div class="top-trend-growth positive-growth">+98%</div>
+        </div>
+
+        <div class="top-trend-item">
+          <div class="top-trend-rank">4</div>
+          <div class="top-trend-info">
+            <div class="top-trend-title">ダイソン Airwrap Complete</div>
+            <div class="top-trend-metrics">
+              <div class="top-trend-metric">
+                <span>検索ボリューム:</span>
+                <span>16,700</span>
+              </div>
+              <div class="top-trend-metric">
+                <span>平均価格:</span>
+                <span>¥46,800</span>
+              </div>
+            </div>
+          </div>
+          <div class="top-trend-growth positive-growth">+85%</div>
+        </div>
+
+        <div class="top-trend-item">
+          <div class="top-trend-rank">5</div>
+          <div class="top-trend-info">
+            <div class="top-trend-title">Apple Watch Series 8</div>
+            <div class="top-trend-metrics">
+              <div class="top-trend-metric">
+                <span>検索ボリューム:</span>
+                <span>15,200</span>
+              </div>
+              <div class="top-trend-metric">
+                <span>平均価格:</span>
+                <span>¥42,300</span>
+              </div>
+            </div>
+          </div>
+          <div class="top-trend-growth positive-growth">+74%</div>
+        </div>
+
+        <div class="top-trend-item">
+          <div class="top-trend-rank">6</div>
+          <div class="top-trend-info">
+            <div class="top-trend-title">NIKE エアジョーダン1 レトロ ハイ OG</div>
+            <div class="top-trend-metrics">
+              <div class="top-trend-metric">
+                <span>検索ボリューム:</span>
+                <span>14,600</span>
+              </div>
+              <div class="top-trend-metric">
+                <span>平均価格:</span>
+                <span>¥28,900</span>
+              </div>
+            </div>
+          </div>
+          <div class="top-trend-growth positive-growth">+67%</div>
+        </div>
+
+        <div class="top-trend-item">
+          <div class="top-trend-rank">7</div>
+          <div class="top-trend-info">
+            <div class="top-trend-title">iPad Pro M2 12.9インチ</div>
+            <div class="top-trend-metrics">
+              <div class="top-trend-metric">
+                <span>検索ボリューム:</span>
+                <span>13,800</span>
+              </div>
+              <div class="top-trend-metric">
+                <span>平均価格:</span>
+                <span>¥148,000</span>
+              </div>
+            </div>
+          </div>
+          <div class="top-trend-growth positive-growth">+62%</div>
+        </div>
+
+        <div class="top-trend-item">
+          <div class="top-trend-rank">8</div>
+          <div class="top-trend-info">
+            <div class="top-trend-title">ポケモンカード スカーレット&バイオレット 拡張パック</div>
+            <div class="top-trend-metrics">
+              <div class="top-trend-metric">
+                <span>検索ボリューム:</span>
+                <span>12,900</span>
+              </div>
+              <div class="top-trend-metric">
+                <span>平均価格:</span>
+                <span>¥6,500</span>
+              </div>
+            </div>
+          </div>
+          <div class="top-trend-growth positive-growth">+59%</div>
+        </div>
+
+        <div class="top-trend-item">
+          <div class="top-trend-rank">9</div>
+          <div class="top-trend-info">
+            <div class="top-trend-title">Canon EOS R10 ボディ</div>
+            <div class="top-trend-metrics">
+              <div class="top-trend-metric">
+                <span>検索ボリューム:</span>
+                <span>11,500</span>
+              </div>
+              <div class="top-trend-metric">
+                <span>平均価格:</span>
+                <span>¥95,700</span>
+              </div>
+            </div>
+          </div>
+          <div class="top-trend-growth positive-growth">+52%</div>
+        </div>
+
+        <div class="top-trend-item">
+          <div class="top-trend-rank">10</div>
+          <div class="top-trend-info">
+            <div class="top-trend-title">ZARA オーバーサイズトレンチコート</div>
+            <div class="top-trend-metrics">
+              <div class="top-trend-metric">
+                <span>検索ボリューム:</span>
+                <span>10,800</span>
+              </div>
+              <div class="top-trend-metric">
+                <span>平均価格:</span>
+                <span>¥12,300</span>
+              </div>
+            </div>
+          </div>
+          <div class="top-trend-growth positive-growth">+48%</div>
+        </div>
+        <!-- 残りのトップ商品は省略（#11〜#100） -->
+      </div>
+    </section>
+
+    <section class="google-trends-integration">
+      <div class="google-trends-container">
+        <div class="google-trends-header">
+          <span>📊</span>
+          <span>Google Trends ライブデータ</span>
+        </div>
+        <div class="google-trends-content" id="google-trends-embed">
+          <!-- Google Trendsウィジェットが埋め込まれる -->
+          <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Google Trendsデータを読み込み中...</div>
+          </div>
+        </div>
+      </div>
+      <div class="google-trends-insights">
+        <h3 class="insight-title">トレンドインサイト</h3>
+        <div class="insights-list">
+          <div class="insight-item">
+            <div class="insight-item-title">Nintendo Switchの需要急上昇</div>
+            <div class="insight-item-description">昨日からの検索量が156%増加。新作ゲームの発売や年末商戦の影響と考えられます。</div>
+          </div>
+          <div class="insight-item">
+            <div class="insight-item-title">PlayStation 5の入手性が改善</div>
+            <div class="insight-item-description">供給量の増加により平均価格が5%下落。出品数も33%増加しています。</div>
+          </div>
+          <div class="insight-item">
+            <div class="insight-item-title">AirPodsは販売サイクルの終盤</div>
+            <div class="insight-item-description">新モデル発売の噂により中古市場での出品が27%増加。購入を検討している方は価格下落を待つことをお勧めします。</div>
+          </div>
+          <div class="insight-item">
+            <div class="insight-item-title">冬物アパレルの需要増加</div>
+            <div class="insight-item-description">急な気温低下により冬物アパレルの検索量が42%増加。特にZARAやUNIQLOのアウターが人気です。</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    <div class="footer-content">
+      <div class="footer-copyright">© 2024 メルカリNGワードブロッカー 拡張機能</div>
+      <div class="footer-links">
+        <a href="#" class="footer-link">プライバシーポリシー</a>
+        <a href="#" class="footer-link">利用規約</a>
+        <a href="#" class="footer-link">お問い合わせ</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // チャート描画用のシンプルなライブラリ
+    class SimpleChart {
+      constructor(container, type = 'line') {
+        this.container = typeof container === 'string' ? document.getElementById(container) : container;
+        this.type = type;
+        this.canvas = document.createElement('canvas');
+        this.canvas.width = this.container.clientWidth;
+        this.canvas.height = this.container.clientHeight;
+        this.container.innerHTML = '';
+        this.container.appendChild(this.canvas);
+        this.ctx = this.canvas.getContext('2d');
+        this.colors = [
+          '#ff4081', '#2196f3', '#ffc107', '#4caf50', '#9c27b0',
+          '#f44336', '#00bcd4', '#ff9800', '#3f51b5', '#8bc34a'
+        ];
+      }
+
+      drawLine(data) {
+        const { labels, datasets } = data;
+        const ctx = this.ctx;
+        const width = this.canvas.width;
+        const height = this.canvas.height;
+        const padding = 40;
+        const chartWidth = width - padding * 2;
+        const chartHeight = height - padding * 2;
+
+        // 背景をクリア
+        ctx.clearRect(0, 0, width, height);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, width, height);
+
+        // グリッド線を描画
+        ctx.strokeStyle = '#e0e0e0';
+        ctx.lineWidth = 1;
+
+        // 横線
+        for (let i = 0; i <= 5; i++) {
+          const y = padding + (chartHeight / 5) * i;
+          ctx.beginPath();
+          ctx.moveTo(padding, y);
+          ctx.lineTo(width - padding, y);
+          ctx.stroke();
+        }
+
+        // 縦線
+        for (let i = 0; i < labels.length; i++) {
+          const x = padding + (chartWidth / (labels.length - 1)) * i;
+          ctx.beginPath();
+          ctx.moveTo(x, padding);
+          ctx.lineTo(x, height - padding);
+          ctx.stroke();
+        }
+
+        // X軸のラベル
+        ctx.fillStyle = '#757575';
+        ctx.font = '12px "Noto Sans JP", sans-serif';
+        ctx.textAlign = 'center';
+        for (let i = 0; i < labels.length; i++) {
+          const x = padding + (chartWidth / (labels.length - 1)) * i;
+          ctx.fillText(labels[i], x, height - padding + 20);
+        }
+
+        // データセットを描画
+        datasets.forEach((dataset, datasetIndex) => {
+          const values = dataset.data;
+          const color = dataset.color || this.colors[datasetIndex % this.colors.length];
+          
+          // 最大値を取得
+          const maxValue = Math.max(...values) * 1.1;
+
+          // 線を描画
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+
+          values.forEach((value, index) => {
+            const x = padding + (chartWidth / (values.length - 1)) * index;
+            const y = height - padding - ((value / maxValue) * chartHeight);
+            
+            if (index === 0) {
+              ctx.moveTo(x, y);
+            } else {
+              ctx.lineTo(x, y);
+            }
+          });
+
+          ctx.stroke();
+
+          // 点を描画
+          values.forEach((value, index) => {
+            const x = padding + (chartWidth / (values.length - 1)) * index;
+            const y = height - padding - ((value / maxValue) * chartHeight);
+            
+            ctx.beginPath();
+            ctx.arc(x, y, 5, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+          });
+        });
+
+        // 凡例
+        if (datasets.length > 1) {
+          const legendY = 20;
+          const legendX = width - padding - 150;
+          
+          datasets.forEach((dataset, index) => {
+            const y = legendY + index * 25;
+            const color = dataset.color || this.colors[index % this.colors.length];
+            
+            // 凡例の色の四角
+            ctx.fillStyle = color;
+            ctx.fillRect(legendX, y, 15, 15);
+            
+            // 凡例テキスト
+            ctx.fillStyle = '#333';
+            ctx.textAlign = 'left';
+            ctx.fillText(dataset.label, legendX + 25, y + 12);
+          });
+        }
+      }
+
+      drawBar(data) {
+        const { labels, datasets } = data;
+        const ctx = this.ctx;
+        const width = this.canvas.width;
+        const height = this.canvas.height;
+        const padding = 40;
+        const chartWidth = width - padding * 2;
+        const chartHeight = height - padding * 2;
+
+        // 背景をクリア
+        ctx.clearRect(0, 0, width, height);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, width, height);
+
+        // グリッド線を描画
+        ctx.strokeStyle = '#e0e0e0';
+        ctx.lineWidth = 1;
+
+        // 横線
+        for (let i = 0; i <= 5; i++) {
+          const y = padding + (chartHeight / 5) * i;
+          ctx.beginPath();
+          ctx.moveTo(padding, y);
+          ctx.lineTo(width - padding, y);
+          ctx.stroke();
+        }
+
+        // データセットを描画
+        const barWidth = chartWidth / labels.length / (datasets.length + 1);
+
+        datasets.forEach((dataset, datasetIndex) => {
+          const values = dataset.data;
+          const color = dataset.color || this.colors[datasetIndex % this.colors.length];
+          
+          // 最大値を取得
+          const maxValue = Math.max(...values.map(v => Math.abs(v))) * 1.1;
+
+          // バーを描画
+          values.forEach((value, index) => {
+            const x = padding + (chartWidth / labels.length) * index + barWidth * datasetIndex + barWidth / 2;
+            const barHeight = (value / maxValue) * chartHeight;
+            const y = height - padding - barHeight;
+            
+            // グラデーションを作成
+            const gradient = ctx.createLinearGradient(x, y, x, height - padding);
+            gradient.addColorStop(0, color);
+            gradient.addColorStop(1, color + '80'); // 半透明
+
+            ctx.fillStyle = gradient;
+            ctx.fillRect(x, y, barWidth, barHeight);
+            
+            // 値を表示
+            ctx.fillStyle = '#333';
+            ctx.font = '12px "Noto Sans JP", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(value, x + barWidth / 2, y - 5);
+          });
+        });
+
+        // X軸のラベル
+        ctx.fillStyle = '#757575';
+        ctx.font = '12px "Noto Sans JP", sans-serif';
+        ctx.textAlign = 'center';
+        for (let i = 0; i < labels.length; i++) {
+          const x = padding + (chartWidth / labels.length) * i + chartWidth / labels.length / 2;
+          ctx.fillText(labels[i], x, height - padding + 20);
+        }
+
+        // 凡例
+        if (datasets.length > 1) {
+          const legendY = 20;
+          const legendX = width - padding - 150;
+          
+          datasets.forEach((dataset, index) => {
+            const y = legendY + index * 25;
+            const color = dataset.color || this.colors[index % this.colors.length];
+            
+            // 凡例の色の四角
+            ctx.fillStyle = color;
+            ctx.fillRect(legendX, y, 15, 15);
+            
+            // 凡例テキスト
+            ctx.fillStyle = '#333';
+            ctx.textAlign = 'left';
+            ctx.fillText(dataset.label, legendX + 25, y + 12);
+          });
+        }
+      }
+
+      drawPie(data) {
+        const ctx = this.ctx;
+        const width = this.canvas.width;
+        const height = this.canvas.height;
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const radius = Math.min(width, height) / 2 - 50;
+
+        // 背景をクリア
+        ctx.clearRect(0, 0, width, height);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, width, height);
+
+        // 合計値を計算
+        const total = data.values.reduce((acc, val) => acc + val, 0);
+        
+        // 開始角度
+        let startAngle = 0;
+        
+        // 凡例のY位置
+        let legendY = height / 2 - (data.labels.length * 25) / 2;
+
+        // 各セクションを描画
+        data.values.forEach((value, index) => {
+          // 角度を計算
+          const angle = (value / total) * Math.PI * 2;
+          
+          // 色を取得
+          const color = data.colors?.[index] || this.colors[index % this.colors.length];
+          
+          // セクションを描画
+          ctx.beginPath();
+          ctx.moveTo(centerX, centerY);
+          ctx.arc(centerX, centerY, radius, startAngle, startAngle + angle);
+          ctx.closePath();
+          ctx.fillStyle = color;
+          ctx.fill();
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          
+          // セクションの中央の角度
+          const midAngle = startAngle + angle / 2;
+          
+          // パーセントを表示（十分なスペースがある場合のみ）
+          const percent = Math.round((value / total) * 100);
+          if (percent > 3) {  // 3%以上のセクションにのみラベルを表示
+            const textRadius = radius * 0.7;
+            const textX = centerX + Math.cos(midAngle) * textRadius;
+            const textY = centerY + Math.sin(midAngle) * textRadius;
+            
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 14px "Noto Sans JP", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(`${percent}%`, textX, textY);
+          }
+          
+          // 凡例
+          const legendX = width - 200;
+          
+          // 凡例の色の四角
+          ctx.fillStyle = color;
+          ctx.fillRect(legendX, legendY + index * 25, 15, 15);
+          
+          // 凡例テキスト
+          ctx.fillStyle = '#333';
+          ctx.textAlign = 'left';
+          ctx.font = '14px "Noto Sans JP", sans-serif';
+          ctx.fillText(`${data.labels[index]} (${percent}%)`, legendX + 25, legendY + index * 25 + 12);
+          
+          // 次のセクションの開始角度
+          startAngle += angle;
+        });
+      }
+    }
+
+    // ページ読み込み完了時の処理
+    document.addEventListener('DOMContentLoaded', function() {
+      // チャートタブの切り替え
+      const chartTabs = document.querySelectorAll('.chart-tab');
+      chartTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+          // 全てのタブからactiveクラスを削除
+          chartTabs.forEach(t => t.classList.remove('active'));
+          // クリックされたタブにactiveクラスを追加
+          this.classList.add('active');
+          
+          // チャートを描画
+          const chartType = this.getAttribute('data-chart');
+          drawChart(chartType);
+        });
+      });
+      
+      // Google Trends APIの代わりにモックデータを使用
+      setTimeout(() => {
+        loadGoogleTrendsData();
+        // 初期チャートを描画
+        drawChart('trends');
+      }, 1500);
+      
+      // フィルター適用ボタン
+      document.querySelector('.button-apply').addEventListener('click', function() {
+        applyFilters();
+      });
+      
+      // フィルターリセットボタン
+      document.querySelector('.button-reset').addEventListener('click', function() {
+        resetFilters();
+      });
+      
+      // 検索ボタン
+      document.querySelector('.search-button').addEventListener('click', function() {
+        searchTrends();
+      });
+      
+      // 検索入力のEnterキー対応
+      document.querySelector('.search-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          searchTrends();
+        }
+      });
+      
+      // 関連キーワードタグのクリックイベント
+      document.querySelectorAll('.keyword-tag').forEach(tag => {
+        tag.addEventListener('click', function() {
+          document.querySelector('.search-input').value = this.textContent;
+          searchTrends();
+        });
+      });
+    });
+
+    // Google Trendsデータを読み込む関数
+    function loadGoogleTrendsData() {
+      const container = document.getElementById('google-trends-embed');
+      container.innerHTML = `
+        <div style="width:100%; height:400px; text-align:center;">
+          <h3 style="margin:1.5rem 0; color:#4285F4;">Google Trends データ</h3>
+          <div style="display:flex; height:300px;">
+            <div style="flex:1; padding:10px;">
+              <h4 style="margin-bottom:1rem; font-size:1rem;">「Nintendo Switch」の検索トレンド</h4>
+              <div style="height:85%; background-color:#f5f5f5; border-radius:8px; display:flex; justify-content:center; align-items:center;">
+                <div style="width:90%; height:80%;">
+                  <div style="width:100%; height:100%; background:linear-gradient(to top, rgba(66,133,244,0.2), rgba(66,133,244,0.1)); position:relative;">
+                    <svg viewBox="0 0 300 200" width="100%" height="100%" preserveAspectRatio="none">
+                      <path d="M0,200 L0,150 C10,140 20,100 30,95 C40,90 50,100 60,90 C70,80 80,60 90,50 C100,40 110,35 120,40 C130,45 140,60 150,55 C160,50 170,30 180,20 C190,10 200,5 210,15 C220,25 230,50 240,40 C250,30 260,10 270,5 C280,0 290,5 300,10 L300,200 Z" fill="rgba(66,133,244,0.5)" />
+                      <path d="M0,150 C10,140 20,100 30,95 C40,90 50,100 60,90 C70,80 80,60 90,50 C100,40 110,35 120,40 C130,45 140,60 150,55 C160,50 170,30 180,20 C190,10 200,5 210,15 C220,25 230,50 240,40 C250,30 260,10 270,5 C280,0 290,5 300,10" fill="none" stroke="#4285F4" stroke-width="2" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style="flex:1; padding:10px;">
+              <h4 style="margin-bottom:1rem; font-size:1rem;">「PlayStation 5」の検索トレンド</h4>
+              <div style="height:85%; background-color:#f5f5f5; border-radius:8px; display:flex; justify-content:center; align-items:center;">
+                <div style="width:90%; height:80%;">
+                  <div style="width:100%; height:100%; background:linear-gradient(to top, rgba(234,67,53,0.2), rgba(234,67,53,0.1)); position:relative;">
+                    <svg viewBox="0 0 300 200" width="100%" height="100%" preserveAspectRatio="none">
+                      <path d="M0,200 L0,160 C10,150 20,140 30,130 C40,120 50,115 60,120 C70,125 80,140 90,130 C100,120 110,90 120,80 C130,70 140,60 150,50 C160,40 170,30 180,25 C190,20 200,20 210,30 C220,40 230,60 240,50 C250,40 260,20 270,15 C280,10 290,15 300,20 L300,200 Z" fill="rgba(234,67,53,0.5)" />
+                      <path d="M0,160 C10,150 20,140 30,130 C40,120 50,115 60,120 C70,125 80,140 90,130 C100,120 110,90 120,80 C130,70 140,60 150,50 C160,40 170,30 180,25 C190,20 200,20 210,30 C220,40 230,60 240,50 C250,40 260,20 270,15 C280,10 290,15 300,20" fill="none" stroke="#EA4335" stroke-width="2" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // チャートを描画する関数
+    function drawChart(type) {
+      const container = document.getElementById('trends-chart');
+      container.innerHTML = ''; // コンテナをクリア
+      
+      let chart;
+      
+      switch (type) {
+        case 'trends':
+          chart = new SimpleChart(container, 'line');
+          chart.drawLine({
+            labels: ['1週間前', '6日前', '5日前', '4日前', '3日前', '2日前', '昨日', '今日'],
+            datasets: [
+              {
+                label: 'Nintendo Switch',
+                data: [45, 42, 50, 46, 52, 60, 85, 156],
+                color: '#ff4081'
+              },
+              {
+                label: 'PlayStation 5',
+                data: [38, 40, 45, 50, 65, 75, 98, 132],
+                color: '#2196f3'
+              },
+              {
+                label: 'AirPods Pro',
+                data: [30, 35, 32, 40, 45, 55, 70, 98],
+                color: '#ffc107'
+              }
+            ]
+          });
+          break;
+          
+        case 'prices':
+          chart = new SimpleChart(container, 'line');
+          chart.drawLine({
+            labels: ['1週間前', '6日前', '5日前', '4日前', '3日前', '2日前', '昨日', '今日'],
+            datasets: [
+              {
+                label: 'Nintendo Switch',
+                data: [33500, 33200, 33000, 32900, 32800, 32800, 32700, 32800],
+                color: '#ff4081'
+              },
+              {
+                label: 'PlayStation 5',
+                data: [52000, 51500, 51000, 50800, 50500, 50000, 49800, 49500],
+                color: '#2196f3'
+              },
+              {
+                label: 'AirPods Pro',
+                data: [29000, 28800, 28500, 28200, 28000, 27800, 27600, 27500],
+                color: '#ffc107'
+              }
+            ]
+          });
+          break;
+          
+        case 'category':
+          chart = new SimpleChart(container, 'pie');
+          chart.drawPie({
+            labels: ['ゲーム・ホビー', '家電・スマホ', 'ファッション', 'コスメ・美容', 'スポーツ・レジャー', 'インテリア・住まい', 'その他'],
+            values: [35, 28, 15, 10, 7, 3, 2],
+            colors: ['#ff4081', '#2196f3', '#ffc107', '#4caf50', '#9c27b0', '#f44336', '#757575']
+          });
+          break;
+          
+        case 'comparison':
+          chart = new SimpleChart(container, 'bar');
+          chart.drawBar({
+            labels: ['Nintendo Switch', 'PlayStation 5', 'AirPods Pro', 'ダイソン Airwrap', 'Apple Watch'],
+            datasets: [
+              {
+                label: 'メルカリ平均価格',
+                data: [32800, 49500, 27500, 46800, 42300],
+                color: '#ff4081'
+              },
+              {
+                label: 'Amazon平均価格',
+                data: [35680, 54200, 31980, 59800, 45900],
+                color: '#2196f3'
+              }
+            ]
+          });
+          break;
+      }
+    }
+
+    // フィルターを適用する関数
+    function applyFilters() {
+      // フィルター値を取得
+      const period = document.getElementById('period-filter').value;
+      const category = document.getElementById('category-filter').value;
+      const price = document.getElementById('price-filter').value;
+      const sort = document.getElementById('sort-filter').value;
+      
+      // ここでAPIリクエストを行うか、モックデータを使用してリスト更新
+      // 実装例では単にロード中メッセージを表示し、少し待ってからリフレッシュする
+      document.querySelector('.top-trends-list').innerHTML = `
+        <div class="loading-container">
+          <div class="loading-spinner"></div>
+          <div class="loading-text">フィルターを適用中...</div>
+        </div>
+      `;
+      
+      setTimeout(() => {
+        // チャートを更新
+        drawChart(document.querySelector('.chart-tab.active').getAttribute('data-chart'));
+        // トップ100リストを再描画（モックデータ）
+        refreshTopTrendsList();
+      }, 1000);
+    }
+
+    // フィルターをリセットする関数
+    function resetFilters() {
+      document.getElementById('period-filter').value = '7';
+      document.getElementById('category-filter').value = 'all';
+      document.getElementById('price-filter').value = 'all';
+      document.getElementById('sort-filter').value = 'trend';
+      
+      // フィルター適用と同様に処理
+      applyFilters();
+    }
+
+    // トレンドを検索する関数
+    function searchTrends() {
+      const searchQuery = document.querySelector('.search-input').value.trim();
+      
+      if (!searchQuery) {
+        return; // 空の場合は何もしない
+      }
+      
+      // 検索中表示
+      document.querySelector('.top-trends-list').innerHTML = `
+        <div class="loading-container">
+          <div class="loading-spinner"></div>
+          <div class="loading-text">"${searchQuery}" の検索トレンドを分析中...</div>
+        </div>
+      `;
+      
+      // Google Trendsの表示も更新
+      document.getElementById('google-trends-embed').innerHTML = `
+        <div class="loading-container">
+          <div class="loading-spinner"></div>
+          <div class="loading-text">Google Trendsデータを読み込み中...</div>
+        </div>
+      `;
+      
+      // 関連キーワードを更新
+      updateRelatedKeywords(searchQuery);
+      
+      setTimeout(() => {
+        // Google Trendsの表示を更新
+        loadSearchTrendsData(searchQuery);
+        
+        // チャートを更新
+        drawChart('trends');
+        
+        // トップ100リストを再描画（モックデータ）
+        refreshTopTrendsList(searchQuery);
+      }, 1500);
+    }
+
+    // 検索クエリに基づいてGoogle Trendsデータを更新する関数
+    function loadSearchTrendsData(query) {
+      const container = document.getElementById('google-trends-embed');
+      container.innerHTML = `
+        <div style="width:100%; height:400px; text-align:center;">
+          <h3 style="margin:1.5rem 0; color:#4285F4;">「${query}」のGoogle Trends データ</h3>
+          <div style="display:flex; height:300px;">
+            <div style="flex:1; padding:10px;">
+              <h4 style="margin-bottom:1rem; font-size:1rem;">「${query}」の検索トレンド</h4>
+              <div style="height:85%; background-color:#f5f5f5; border-radius:8px; display:flex; justify-content:center; align-items:center;">
+                <div style="width:90%; height:80%;">
+                  <div style="width:100%; height:100%; background:linear-gradient(to top, rgba(66,133,244,0.2), rgba(66,133,244,0.1)); position:relative;">
+                    <svg viewBox="0 0 300 200" width="100%" height="100%" preserveAspectRatio="none">
+                      <path d="M0,200 L0,150 C10,140 20,100 30,95 C40,90 50,100 60,90 C70,80 80,60 90,50 C100,40 110,35 120,40 C130,45 140,60 150,55 C160,50 170,30 180,20 C190,10 200,5 210,15 C220,25 230,50 240,40 C250,30 260,10 270,5 C280,0 290,5 300,10 L300,200 Z" fill="rgba(66,133,244,0.5)" />
+                      <path d="M0,150 C10,140 20,100 30,95 C40,90 50,100 60,90 C70,80 80,60 90,50 C100,40 110,35 120,40 C130,45 140,60 150,55 C160,50 170,30 180,20 C190,10 200,5 210,15 C220,25 230,50 240,40 C250,30 260,10 270,5 C280,0 290,5 300,10" fill="none" stroke="#4285F4" stroke-width="2" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style="flex:1; padding:10px;">
+              <h4 style="margin-bottom:1rem; font-size:1rem;">「${query}」の地域別人気度</h4>
+              <div style="height:85%; background-color:#f5f5f5; border-radius:8px; padding:20px;">
+                <div style="margin-bottom:10px; display:flex; justify-content:space-between;">
+                  <span>東京都</span>
+                  <span style="width:60%; height:12px; background:#4285F4; border-radius:6px;"></span>
+                  <span>100</span>
+                </div>
+                <div style="margin-bottom:10px; display:flex; justify-content:space-between;">
+                  <span>大阪府</span>
+                  <span style="width:54%; height:12px; background:#4285F4; border-radius:6px;"></span>
+                  <span>90</span>
+                </div>
+                <div style="margin-bottom:10px; display:flex; justify-content:space-between;">
+                  <span>愛知県</span>
+                  <span style="width:48%; height:12px; background:#4285F4; border-radius:6px;"></span>
+                  <span>80</span>
+                </div>
+                <div style="margin-bottom:10px; display:flex; justify-content:space-between;">
+                  <span>神奈川県</span>
+                  <span style="width:42%; height:12px; background:#4285F4; border-radius:6px;"></span>
+                  <span>70</span>
+                </div>
+                <div style="margin-bottom:10px; display:flex; justify-content:space-between;">
+                  <span>福岡県</span>
+                  <span style="width:36%; height:12px; background:#4285F4; border-radius:6px;"></span>
+                  <span>60</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // 関連キーワードを更新する関数
+    function updateRelatedKeywords(query) {
+      // 検索クエリに基づいてカスタマイズされた関連キーワード
+      let relatedKeywords;
+      
+      if (query.toLowerCase().includes('nintendo') || query.toLowerCase().includes('switch')) {
+        relatedKeywords = [
+          'Nintendo Switch 有機EL', 'Nintendo Switch Lite', 'Nintendo Switch 本体', 
+          'Nintendo Switch ゲームソフト', 'Nintendo Switch コントローラー',
+          'Nintendo Switch 充電スタンド', 'Nintendo Switch 周辺機器', 'Nintendo Switch ケース'
+        ];
+      } else if (query.toLowerCase().includes('playstation') || query.toLowerCase().includes('ps5')) {
+        relatedKeywords = [
+          'PlayStation 5', 'PS5 デジタルエディション', 'PS5 ディスクドライブ', 
+          'PS5 コントローラー', 'PS5 充電スタンド', 'PS5 周辺機器',
+          'PS5 ソフト', 'PS5 ヘッドセット'
+        ];
+      } else if (query.toLowerCase().includes('airpods')) {
+        relatedKeywords = [
+          'AirPods Pro', 'AirPods 第3世代', 'AirPods Max', 
+          'AirPods ケース', 'AirPods 充電器', 'AirPods イヤーピース',
+          'AirPods クリーナー', 'AirPods アクセサリー'
+        ];
+      } else {
+        // デフォルトの関連キーワード
+        relatedKeywords = [
+          `${query} 中古`, `${query} 新品`, `${query} 激安`, 
+          `${query} 送料無料`, `${query} セット`, `${query} 公式`,
+          `${query} 正規品`, `${query} 限定`
+        ];
+      }
+      
+      // 関連キーワードリストを更新
+      const keywordsList = document.querySelector('.keywords-list');
+      keywordsList.innerHTML = '';
+      
+      relatedKeywords.forEach(keyword => {
+        const keywordTag = document.createElement('div');
+        keywordTag.className = 'keyword-tag';
+        keywordTag.textContent = keyword;
+        
+        // クリックイベント
+        keywordTag.addEventListener('click', function() {
+          document.querySelector('.search-input').value = this.textContent;
+          searchTrends();
+        });
+        
+        keywordsList.appendChild(keywordTag);
+      });
+    }
+
+    // トップトレンドリストを更新する関数
+    function refreshTopTrendsList(searchQuery = '') {
+      const container = document.querySelector('.top-trends-list');
+      
+      // モックデータを使用（実際にはAPIから取得）
+      let trendItems;
+      
+      if (searchQuery) {
+        // 検索に基づくモックデータ
+        trendItems = generateSearchBasedTrends(searchQuery);
+      } else {
+        // デフォルトのトップトレンド
+        trendItems = [
+          {
+            rank: 1,
+            title: 'Nintendo Switch 有機ELモデル',
+            volume: 24500,
+            price: 32800,
+            growth: 156,
+            positive: true
+          },
+          {
+            rank: 2,
+            title: 'PlayStation 5 デジタル・エディション',
+            volume: 22300,
+            price: 49500,
+            growth: 132,
+            positive: true
+          },
+          {
+            rank: 3,
+            title: 'AirPods Pro (第2世代)',
+            volume: 18900,
+            price: 27500,
+            growth: 98,
+            positive: true
+          },
+          {
+            rank: 4,
+            title: 'ダイソン Airwrap Complete',
+            volume: 16700,
+            price: 46800,
+            growth: 85,
+            positive: true
+          },
+          {
+            rank: 5,
+            title: 'Apple Watch Series 8',
+            volume: 15200,
+            price: 42300,
+            growth: 74,
+            positive: true
+          }
+        ];
+        
+        // 残りの項目を生成（6-20位）
+        const additionalItems = [
+          'NIKE エアジョーダン1 レトロ ハイ OG',
+          'iPad Pro M2 12.9インチ',
+          'ポケモンカード スカーレット&バイオレット 拡張パック',
+          'Canon EOS R10 ボディ',
+          'ZARA オーバーサイズトレンチコート',
+          'ソニー ワイヤレスノイズキャンセリングヘッドホン WH-1000XM5',
+          'ユニクロ ウルトラライトダウン',
+          'Nintendo Switch Lite ターコイズ',
+          'Kindle Paperwhite 第11世代',
+          'ゼルダの伝説 ティアーズ オブ ザ キングダム',
+          'サムソナイト スーツケース 28インチ',
+          'Apple MacBook Air M2 13インチ',
+          'リモワ クラシックフライト',
+          'バレンシアガ スピード トレーナー',
+          'BOSE QuietComfort Earbuds II'
+        ];
+        
+        for (let i = 0; i < additionalItems.length; i++) {
+          trendItems.push({
+            rank: i + 6,
+            title: additionalItems[i],
+            volume: Math.round(10000 - i * 300),
+            price: Math.round(10000 + Math.random() * 100000),
+            growth: Math.round(40 - i * 1.5),
+            positive: true
+          });
+        }
+      }
+      
+      // HTMLを生成
+      let html = '';
+      trendItems.forEach(item => {
+        html += `
+          <div class="top-trend-item">
+            <div class="top-trend-rank">${item.rank}</div>
+            <div class="top-trend-info">
+              <div class="top-trend-title">${item.title}</div>
+              <div class="top-trend-metrics">
+                <div class="top-trend-metric">
+                  <span>検索ボリューム:</span>
+                  <span>${item.volume.toLocaleString()}</span>
+                </div>
+                <div class="top-trend-metric">
+                  <span>平均価格:</span>
+                  <span>¥${item.price.toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+            <div class="top-trend-growth ${item.positive ? 'positive-growth' : 'negative-growth'}">
+              ${item.positive ? '+' : ''}${item.growth}%
+            </div>
+          </div>
+        `;
+      });
+      
+      container.innerHTML = html;
+    }
+
+    // 検索クエリに基づいたトレンドを生成する関数
+    function generateSearchBasedTrends(query) {
+      const lowercaseQuery = query.toLowerCase();
+      const trends = [];
+      
+      // 検索クエリに基づいてカスタマイズされたトレンド
+      let trendItems;
+      
+      if (lowercaseQuery.includes('nintendo') || lowercaseQuery.includes('switch')) {
+        trendItems = [
+          { title: 'Nintendo Switch 有機ELモデル ホワイト', price: 37800 },
+          { title: 'Nintendo Switch 本体 ネオンブルー/ネオンレッド', price: 32800 },
+          { title: 'Nintendo Switch Lite ターコイズ', price: 21980 },
+          { title: 'Nintendo Switch Proコントローラー', price: 7480 },
+          { title: 'Nintendo Switch Joy-Con ネオンパープル/ネオンオレンジ', price: 8200 },
+          { title: 'Nintendo Switch 充電スタンド', price: 2800 },
+          { title: 'Nintendo Switch キャリングケース', price: 2500 },
+          { title: 'Nintendo Switch 大乱闘スマッシュブラザーズ', price: 6300 },
+          { title: 'Nintendo Switch マリオカート8 デラックス', price: 5980 },
+          { title: 'Nintendo Switch あつまれ どうぶつの森', price: 5500 }
+        ];
+      } else if (lowercaseQuery.includes('playstation') || lowercaseQuery.includes('ps5')) {
+        trendItems = [
+          { title: 'PlayStation 5 ディスクドライブ搭載モデル', price: 65800 },
+          { title: 'PlayStation 5 デジタル・エディション', price: 49500 },
+          { title: 'PlayStation 5 DualSenseワイヤレスコントローラー', price: 7980 },
+          { title: 'PlayStation 5 充電スタンド', price: 3400 },
+          { title: 'PlayStation 5 HDカメラ', price: 6800 },
+          { title: 'PlayStation 5 PULSE 3Dワイヤレスヘッドセット', price: 12800 },
+          { title: 'PlayStation 5 縦置きスタンド', price: 2800 },
+          { title: 'PlayStation 5 コントローラー充電器', price: 3200 },
+          { title: 'PlayStation 5 ファイナルファンタジー16', price: 8800 },
+          { title: 'PlayStation 5 ホグワーツ・レガシー', price: 7600 }
+        ];
+      } else if (lowercaseQuery.includes('airpods')) {
+        trendItems = [
+          { title: 'AirPods Pro (第2世代)', price: 27500 },
+          { title: 'AirPods (第3世代)', price: 22800 },
+          { title: 'AirPods Max スペースグレイ', price: 59800 },
+          { title: 'AirPods Pro シリコンケース', price: 1200 },
+          { title: 'AirPods Pro イヤーピース Sサイズ', price: 800 },
+          { title: 'AirPods Pro イヤーピース Mサイズ', price: 800 },
+          { title: 'AirPods Pro イヤーピース Lサイズ', price: 800 },
+          { title: 'AirPods ワイヤレス充電ケース', price: 12800 },
+          { title: 'AirPods クリーニングキット', price: 1500 },
+          { title: 'AirPods Pro 保護フィルム', price: 1200 }
+        ];
+      } else {
+        // 検索クエリが特定のものに一致しない場合のデフォルトトレンド
+        trendItems = [
+          { title: `${query} 新品未使用 正規品`, price: Math.round(20000 + Math.random() * 50000) },
+          { title: `${query} 中古美品`, price: Math.round(15000 + Math.random() * 40000) },
+          { title: `${query} 限定モデル`, price: Math.round(25000 + Math.random() * 60000) },
+          { title: `${query} 2023年最新モデル`, price: Math.round(30000 + Math.random() * 70000) },
+          { title: `${query} アウトレット品`, price: Math.round(10000 + Math.random() * 30000) },
+          { title: `${query} ブラック`, price: Math.round(18000 + Math.random() * 45000) },
+          { title: `${query} ホワイト`, price: Math.round(18000 + Math.random() * 45000) },
+          { title: `${query} 特別セット`, price: Math.round(35000 + Math.random() * 80000) },
+          { title: `${query} 送料無料`, price: Math.round(16000 + Math.random() * 40000) },
+          { title: `${query} 即日発送`, price: Math.round(19000 + Math.random() * 48000) }
+        ];
+      }
+      
+      // トレンドリストを生成
+      for (let i = 0; i < trendItems.length; i++) {
+        trends.push({
+          rank: i + 1,
+          title: trendItems[i].title,
+          volume: Math.round(20000 - i * 1000 + Math.random() * 5000),
+          price: trendItems[i].price,
+          growth: Math.round(150 - i * 10 + Math.random() * 20),
+          positive: true
+        });
+      }
+      
+      return trends;
+    }
+  </script>
+</body>
+</html>

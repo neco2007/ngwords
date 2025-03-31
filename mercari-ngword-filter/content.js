@@ -1,9 +1,9 @@
-// メルカリNGワードブロッカー最終強化版 - 完全修正版
+// メルカリNGワードブロッカー改良版 - 2024年版
 
 // 設定
 const CONFIG = {
   // デバッグモード (false = 本番環境用)
-  debugMode: false,
+  debugMode: true,
   // 検索結果の一括処理数
   batchSize: 30,
   // DOM変更の監視間隔 (ms)
@@ -15,9 +15,13 @@ const CONFIG = {
   // リダイレクト遅延時間 (ms)
   redirectDelay: 1500,
   // 在庫API設定
-  inventoryApiUrl: 'http://160.251.212.163/inventory-manager',
-  apiEndpoint: '/api/secure/inventory',
-  apiKey: 'neco2007'
+  inventoryApiUrl: 'https://api.mercari-trends.com',
+  apiEndpoint: '/api/inventory',
+  apiKey: 'your-api-key-here',
+  // ボタン表示設定
+  showCustomButtons: true,
+  // トレンド分析ページのURL
+  trendAnalysisUrl: 'trends.html'
 };
 
 // グローバル変数
@@ -35,20 +39,9 @@ let processedElements = new Set();    // 処理済み要素を追跡するため
 let productList = [];                 // リストに追加された商品
 let inventoryList = [];               // 在庫リストに追加された商品
 let processedButtons = new Set();     // 処理済みボタンを追跡するセット
+let buttonsEnabled = true;            // ボタン表示の有効/無効状態
 
-// 最小限のログ出力用関数
-function log(message, type = 'info') {
-  if (!CONFIG.debugMode && type === 'debug') return;
-  
-  const prefix = type === 'error' ? '🛑 エラー:' : 
-                 type === 'warn' ? '⚠️ 警告:' : 
-                 '✓';
-  
-  console.log(`[NGブロッカー] ${prefix} ${message}`);
-}
-
-// 直接指定するNGワードリスト（省略）
-// 実際のコードでは4,300以上のブランド名などが含まれる
+// NGワードのリスト（数が多いため簡略化）
 const directNgWords = [
   "Copic", "IL BISONTE", "Lindt", "'47", "★wy★", "101 DALMATIANS", "10Gtek", "17906697543", 
   "2pac", "397395458?", "3CE", "3Dペン", "3M", "5 Seconds Of Summer", "5.11", "52TOYS", 
@@ -768,28 +761,16 @@ const directNgWords = [
 // すべて小文字のNGワードリスト（検索用）
 const lowerCaseNgWords = directNgWords.map(word => word.toLowerCase());
 
-// トレンド分析機能の設定
-const TREND_CONFIG = {
-  // リクエスト間隔（ミリ秒）- サーバー負荷を避けるため
-  requestDelay: 1000,
-  // 一度に収集する最大アイテム数
-  maxItems: 20,
-  // データキャッシュの有効期間（ミリ秒）- 1時間
-  cacheExpiry: 60 * 60 * 1000,
-  // Amazon検索URL（検索用プレースホルダー %s）
-  amazonSearchUrl: 'https://www.amazon.co.jp/s?k=%s',
-  // 正規表現
-  patterns: {
-    price: /¥([0-9,]+)/,
-    itemCode: /([A-Z0-9]{10})/
-  }
-};
-
-// キャッシュデータ
-let trendDataCache = {
-  mercari: {},
-  amazon: {}
-};
+// 最小限のログ出力用関数
+function log(message, type = 'info') {
+  if (!CONFIG.debugMode && type === 'debug') return;
+  
+  const prefix = type === 'error' ? '🛑 エラー:' : 
+                 type === 'warn' ? '⚠️ 警告:' : 
+                 '✓';
+  
+  console.log(`[NGブロッカー] ${prefix} ${message}`);
+}
 
 // スタイルを直接挿入
 function injectStyles() {
@@ -1160,6 +1141,12 @@ function injectStyles() {
       gap: 8px;
       margin-top: 10px;
       width: 100%;
+      position: absolute;
+      bottom: 10px;
+      left: 0;
+      right: 0;
+      padding: 0 10px;
+      z-index: 100;
     }
     
     /* カスタムボタン共通スタイル */
@@ -1382,7 +1369,7 @@ function injectStyles() {
       background-color: #f44336;
     }
     
-    /* トレンドチャート関連のスタイル */
+    /* トレンド分析関連のスタイル */
     .trend-chart-tabs {
       display: flex;
       margin-bottom: 10px;
@@ -1436,6 +1423,37 @@ function injectStyles() {
     
     .price-equal {
       color: #FF9800;
+    }
+    
+    /* トレンド分析ボタン */
+    .trend-analysis-button {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      background: linear-gradient(to right, #4CAF50, #2E7D32);
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 30px;
+      cursor: pointer;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: bold;
+      z-index: 99999;
+      transition: all 0.3s ease;
+    }
+    
+    .trend-analysis-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    }
+    
+    .trend-analysis-button::before {
+      content: '📈';
+      font-size: 18px;
     }
     
     @keyframes fadeInOut {
@@ -1578,7 +1596,7 @@ function createControlPanel() {
     <button id="ng-clear-all" class="ng-button ng-secondary">クリア</button>
   `;
   
-  // リスト管理ボタン（新機能）
+  // リスト管理ボタン
   const listGroup = document.createElement('div');
   listGroup.className = 'ng-control-group';
   listGroup.innerHTML = `
@@ -1587,12 +1605,26 @@ function createControlPanel() {
     <button id="ng-sync-inventory" class="ng-button ng-secondary">在庫データを同期</button>
   `;
   
+  // ボタン表示設定
+  const buttonSettingsGroup = document.createElement('div');
+  buttonSettingsGroup.className = 'ng-control-group';
+  buttonSettingsGroup.innerHTML = `
+    <label class="ng-control-label">ボタン表示設定:</label>
+    <div class="ng-flex-row">
+      <label class="ng-control-switch">
+        <input type="checkbox" id="ng-buttons-toggle" ${buttonsEnabled ? 'checked' : ''}>
+        <span class="ng-control-slider"></span>
+      </label>
+      <span class="ng-status-text">${buttonsEnabled ? 'ボタン表示' : 'ボタン非表示'}</span>
+    </div>
+  `;
+  
   // トレンド分析ボタン
   const trendGroup = document.createElement('div');
   trendGroup.className = 'ng-control-group';
   trendGroup.innerHTML = `
     <label class="ng-control-label">トレンド分析:</label>
-    <button id="ng-trend-analysis" class="ng-button">トレンド分析を開始</button>
+    <button id="ng-trend-analysis" class="ng-button">トレンド分析を開く</button>
   `;
   
   // パネルを組み立て
@@ -1601,6 +1633,7 @@ function createControlPanel() {
   body.appendChild(keywordGroup);
   body.appendChild(pageActionsGroup);
   body.appendChild(listGroup);
+  body.appendChild(buttonSettingsGroup);
   body.appendChild(trendGroup);
   
   panel.appendChild(header);
@@ -1611,6 +1644,24 @@ function createControlPanel() {
   // フィルタートグル
   document.getElementById('ng-filter-toggle').addEventListener('change', function(e) {
     toggleFilter();
+    updateControlPanel();
+  });
+  
+  // ボタン表示トグル
+  document.getElementById('ng-buttons-toggle').addEventListener('change', function(e) {
+    buttonsEnabled = this.checked;
+    chrome.storage.local.set({buttonsEnabled: buttonsEnabled});
+    
+    if (buttonsEnabled) {
+      processedButtons.clear();
+      addCustomButtonsToProducts();
+    } else {
+      // すべてのカスタムボタンを削除
+      document.querySelectorAll('.custom-buttons-container').forEach(container => {
+        container.remove();
+      });
+    }
+    
     updateControlPanel();
   });
   
@@ -1721,13 +1772,30 @@ function createControlPanel() {
   
   // トレンド分析ボタン
   document.getElementById('ng-trend-analysis').addEventListener('click', function() {
-    window.open('popup.html?tab=analysis', '_blank', 'width=460,height=600');
+    window.open(CONFIG.trendAnalysisUrl, '_blank', 'width=800,height=600');
   });
   
   // 常時表示タブを追加
   createPermanentToggleTab();
   
   log('コントロールパネルを作成しました', 'debug');
+}
+
+// トレンド分析フローティングボタンを作成
+function createTrendAnalysisButton() {
+  const existingButton = document.getElementById('trend-analysis-floating-button');
+  if (existingButton) return;
+  
+  const button = document.createElement('button');
+  button.id = 'trend-analysis-floating-button';
+  button.className = 'trend-analysis-button';
+  button.textContent = 'トレンド分析';
+  
+  button.addEventListener('click', function() {
+    window.open(CONFIG.trendAnalysisUrl, '_blank', 'width=800,height=600');
+  });
+  
+  document.body.appendChild(button);
 }
 
 // 常時表示される制御タブを作成
@@ -1836,11 +1904,15 @@ function updateControlPanel() {
   const statusText = toggle?.parentElement.nextElementSibling;
   const blockCountElem = document.getElementById('ng-block-count');
   const showListButton = document.getElementById('ng-show-list');
+  const buttonsToggle = document.getElementById('ng-buttons-toggle');
+  const buttonsStatusText = buttonsToggle?.parentElement.nextElementSibling;
   
   if (toggle) toggle.checked = isFilterActive;
   if (statusText) statusText.textContent = isFilterActive ? 'フィルター有効' : 'フィルター無効';
   if (blockCountElem) blockCountElem.textContent = blockCount;
   if (showListButton) showListButton.textContent = `商品リストを表示 (${productList.length})`;
+  if (buttonsToggle) buttonsToggle.checked = buttonsEnabled;
+  if (buttonsStatusText) buttonsStatusText.textContent = buttonsEnabled ? 'ボタン表示' : 'ボタン非表示';
 }
 
 // 在庫データを同期する関数
@@ -1916,6 +1988,18 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
             }
           }
         }
+        if (request.settings.buttonsEnabled !== undefined) {
+          buttonsEnabled = request.settings.buttonsEnabled;
+          if (buttonsEnabled) {
+            processedButtons.clear();
+            addCustomButtonsToProducts();
+          } else {
+            // すべてのカスタムボタンを削除
+            document.querySelectorAll('.custom-buttons-container').forEach(container => {
+              container.remove();
+            });
+          }
+        }
       }
       sendResponse({status: 'success'});
     }
@@ -1936,28 +2020,6 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
       // 在庫の同期処理
       syncInventoryData();
       sendResponse({status: 'success'});
-    }
-    // トレンドデータのリクエストを処理
-    else if (request.action === 'fetchTrendData') {
-      log(`トレンドデータのリクエストを受信: カテゴリ=${request.category}, 期間=${request.period}`, 'debug');
-      
-      // 非同期でトレンドデータを収集
-      collectTrendData(request.category, request.period)
-        .then(data => {
-          sendResponse({
-            status: 'success',
-            data: data
-          });
-        })
-        .catch(error => {
-          log(`トレンドデータ収集エラー: ${error.message}`, 'error');
-          sendResponse({
-            status: 'error',
-            message: error.message
-          });
-        });
-        
-      return true; // 非同期レスポンスを有効化
     }
   } catch (e) {
     log(`メッセージハンドラでエラー: ${e.message}`, 'error');
@@ -2027,6 +2089,9 @@ function activateFilter() {
   // ストレージからリストを読み込む
   loadProductListFromStorage();
   loadInventoryListFromStorage();
+  
+  // トレンド分析ボタンを表示
+  createTrendAnalysisButton();
 }
 
 // フィルタを無効化
@@ -2078,6 +2143,10 @@ function deactivateFilter() {
   
   // カウントをリセット
   blockCount = 0;
+  
+  // トレンド分析ボタンを削除
+  const trendButton = document.getElementById('trend-analysis-floating-button');
+  if (trendButton) trendButton.remove();
 }
 
 // 商品を確実に非表示にする強化版
@@ -2182,21 +2251,27 @@ function processPage() {
       // 検索結果ページの場合
       setTimeout(() => {
         blockSearchResults();
-        addCustomButtonsToProducts(); // カスタムボタンを追加
+        if (buttonsEnabled) {
+          addCustomButtonsToProducts(); // カスタムボタンを追加
+        }
         isProcessing = false;
       }, 100);
     } else if (window.location.href.includes('item/')) {
       // 商品詳細ページの場合
       setTimeout(() => {
         checkProductPage();
-        addCustomButtonsToProducts(); // カスタムボタンを追加
+        if (buttonsEnabled) {
+          addCustomButtonsToProductPage(); // 商品詳細ページ用のボタン追加
+        }
         isProcessing = false;
       }, 100);
     } else {
       // その他のページの場合（トップページやカテゴリページなど）
       setTimeout(() => {
         blockGeneralPage();
-        addCustomButtonsToProducts(); // カスタムボタンを追加
+        if (buttonsEnabled) {
+          addCustomButtonsToProducts(); // カスタムボタンを追加
+        }
         isProcessing = false;
       }, 100);
     }
@@ -2683,7 +2758,7 @@ function showNotification(message, type = 'success') {
 
 // 商品要素にカスタムボタンを追加する関数
 function addCustomButtonsToProducts() {
-  if (!isFilterActive) return;
+  if (!isFilterActive || !buttonsEnabled) return;
   
   // 商品要素を取得（ブロックされていないもののみ）
   const itemElements = Array.from(document.querySelectorAll(getItemSelectors()))
@@ -2693,7 +2768,7 @@ function addCustomButtonsToProducts() {
   itemElements.forEach(item => {
     try {
       // すでに処理済みならスキップ
-      if (processedButtons.has(item)) return;
+      if (processedButtons.has(item) || item.querySelector('.custom-buttons-container')) return;
       
       // 処理済みとしてマーク
       processedButtons.add(item);
@@ -2715,9 +2790,17 @@ function addCustomButtonsToProducts() {
       // 商品情報が不完全な場合はスキップ
       if (!title || !price) return;
       
-      // ボタンコンテナ作成
-      const buttonContainer = document.createElement('div');
-      buttonContainer.className = 'custom-buttons-container';
+      // 既存のボタンコンテナをチェック
+      let buttonContainer = item.querySelector('.custom-buttons-container');
+      
+      // ボタンコンテナがなければ作成
+      if (!buttonContainer) {
+        buttonContainer = document.createElement('div');
+        buttonContainer.className = 'custom-buttons-container';
+      } else {
+        // 既存のボタンコンテナがあれば中身をクリア
+        buttonContainer.innerHTML = '';
+      }
       
       // リスト追加ボタン
       const addToListButton = document.createElement('button');
@@ -2739,21 +2822,107 @@ function addCustomButtonsToProducts() {
         addProductToInventory({ title, price, url });
       });
       
+      // Amazonで検索ボタン
+      const amazonSearchButton = document.createElement('button');
+      amazonSearchButton.className = 'custom-product-button amazon-search-button';
+      amazonSearchButton.textContent = 'Amazonで検索';
+      amazonSearchButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        searchOnAmazon(title);
+      });
+      
       // ボタンをコンテナに追加
       buttonContainer.appendChild(addToListButton);
       buttonContainer.appendChild(addToInventoryButton);
+      buttonContainer.appendChild(amazonSearchButton);
       
       // コンテナを商品要素に追加
       item.appendChild(buttonContainer);
       
-      // ボタンが適切な位置に表示されるようにスタイル調整
+      // 商品要素のスタイル調整
       item.style.position = 'relative';
-      item.style.paddingBottom = '80px';
+      item.style.paddingBottom = '120px'; // ボタン3つ分のスペース
       
     } catch (e) {
       log(`ボタン追加中にエラー: ${e.message}`, 'error');
     }
   });
+}
+
+// 商品詳細ページにカスタムボタンを追加する関数
+function addCustomButtonsToProductPage() {
+  if (!isFilterActive || !buttonsEnabled) return;
+  
+  // 既存のボタンコンテナを確認
+  let buttonContainer = document.querySelector('.product-page-custom-buttons');
+  if (buttonContainer) return; // 既に追加済み
+  
+  try {
+    // 商品タイトル要素を取得
+    const titleElement = document.querySelector('h1, [data-testid="name"]');
+    if (!titleElement) return;
+    
+    const title = titleElement.textContent.trim();
+    
+    // 価格要素を取得
+    const priceElement = document.querySelector('[data-testid="price"], .item-price');
+    const price = priceElement ? priceElement.textContent.trim() : '';
+    
+    // 商品URLを取得
+    const url = window.location.href;
+    
+    // 商品情報が不完全な場合はスキップ
+    if (!title || !price) return;
+    
+    // ボタンコンテナを作成
+    buttonContainer = document.createElement('div');
+    buttonContainer.className = 'custom-buttons-container product-page-custom-buttons';
+    buttonContainer.style.position = 'fixed';
+    buttonContainer.style.right = '20px';
+    buttonContainer.style.top = '100px';
+    buttonContainer.style.width = '200px';
+    buttonContainer.style.padding = '10px';
+    buttonContainer.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+    buttonContainer.style.borderRadius = '10px';
+    buttonContainer.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.2)';
+    buttonContainer.style.zIndex = '999';
+    
+    // リスト追加ボタン
+    const addToListButton = document.createElement('button');
+    addToListButton.className = 'custom-product-button add-to-list-button';
+    addToListButton.textContent = 'リストに追加';
+    addToListButton.addEventListener('click', () => {
+      addProductToList({ title, price, url });
+    });
+    
+    // 在庫リスト追加ボタン
+    const addToInventoryButton = document.createElement('button');
+    addToInventoryButton.className = 'custom-product-button add-to-inventory-button';
+    addToInventoryButton.textContent = '在庫リストに追加';
+    addToInventoryButton.addEventListener('click', () => {
+      addProductToInventory({ title, price, url });
+    });
+    
+    // Amazonで検索ボタン
+    const amazonSearchButton = document.createElement('button');
+    amazonSearchButton.className = 'custom-product-button amazon-search-button';
+    amazonSearchButton.textContent = 'Amazonで検索';
+    amazonSearchButton.addEventListener('click', () => {
+      searchOnAmazon(title);
+    });
+    
+    // ボタンをコンテナに追加
+    buttonContainer.appendChild(addToListButton);
+    buttonContainer.appendChild(addToInventoryButton);
+    buttonContainer.appendChild(amazonSearchButton);
+    
+    // コンテナをボディに追加
+    document.body.appendChild(buttonContainer);
+    
+  } catch (e) {
+    log(`商品詳細ページへのボタン追加中にエラー: ${e.message}`, 'error');
+  }
 }
 
 // リストに商品を追加する関数
@@ -2811,6 +2980,9 @@ async function addProductToInventory(product) {
         'x-api-key': CONFIG.apiKey
       },
       body: JSON.stringify(cleanedProduct)
+    }).catch(error => {
+      log('API通信エラー:', error);
+      throw new Error('サーバーと通信できませんでした。後ほど再試行してください。');
     });
     
     if (response.ok) {
@@ -2819,6 +2991,9 @@ async function addProductToInventory(product) {
       
       // 在庫リストに追加
       inventoryList.push(cleanedProduct);
+      
+      // 在庫リストをストレージに保存
+      saveInventoryListToStorage();
       
       // 通知を表示
       showNotification('商品を在庫リストに追加しました');
@@ -2831,9 +3006,11 @@ async function addProductToInventory(product) {
     }
   } catch (error) {
     log('在庫APIエラー:', error);
-    showNotification(`エラー: ${error.message}`, 'error');
     
-    // エラー時はローカルに保存（オフライン対応）
+    // 接続エラーの場合はオフラインモードで保存
+    showNotification(`オフラインモードで保存しています...`, 'warning');
+    
+    // オフラインモードで保存（後で同期）
     inventoryList.push({
       ...product,
       addedAt: new Date().toISOString(),
@@ -2842,19 +3019,44 @@ async function addProductToInventory(product) {
     
     // ローカルストレージに保存
     saveInventoryListToStorage();
+    
+    // 通知を表示（遅延させる）
+    setTimeout(() => {
+      showNotification('商品をオフラインリストに保存しました（後で同期されます）');
+    }, 1500);
   }
 }
 
 // 商品画像URLを取得する関数
 function getProductImage(url) {
-  // 商品ページから画像要素を探す
-  const imgElement = document.querySelector('img[data-testid="thumbnail-img"]');
-  if (imgElement && imgElement.src) {
-    return imgElement.src;
+  try {
+    // 商品詳細ページの場合
+    if (window.location.href.includes('/item/')) {
+      // メイン商品画像を探す
+      const mainImage = document.querySelector('img[data-testid="thumbnail-img"], .item-image img');
+      if (mainImage && mainImage.src) {
+        return mainImage.src;
+      }
+    }
+    
+    // 商品一覧の場合、サムネイル画像を探す
+    if (url) {
+      const productId = url.match(/\/item\/([^/?]+)/)?.[1];
+      if (productId) {
+        // 現在のページ内で一致する商品のサムネイルを探す
+        const thumbnailItem = document.querySelector(`a[href*="/item/${productId}"] img`);
+        if (thumbnailItem && thumbnailItem.src) {
+          return thumbnailItem.src;
+        }
+      }
+    }
+    
+    // 見つからない場合はプレースホルダー
+    return 'https://placehold.jp/cccccc/ffffff/300x300.png?text=No%20Image';
+  } catch (e) {
+    log(`画像URL取得中にエラー: ${e.message}`, 'error');
+    return 'https://placehold.jp/cccccc/ffffff/300x300.png?text=Error';
   }
-  
-  // 見つからない場合はプレースホルダー
-  return 'https://placehold.jp/cccccc/ffffff/300x300.png?text=No%20Image';
 }
 
 // 価格文字列を数値に変換する関数
@@ -3240,439 +3442,11 @@ function initPanelEnhancement() {
   }
 }
 
-// トレンド分析機能の実装
-/**
- * トレンドデータを収集
- * メルカリとAmazonの両方のデータを収集・結合します
- * @param {string} category - カテゴリID
- * @param {string} period - 期間（daily/weekly/monthly）
- * @return {Promise<Object>} 収集したトレンドデータ
- */
-async function collectTrendData(category, period) {
-  try {
-    log('トレンド分析を開始します', 'info');
-    
-    // キャッシュチェック
-    const cacheKey = `${category}_${period}`;
-    if (trendDataCache.mercari[cacheKey] && 
-        Date.now() - trendDataCache.mercari[cacheKey].timestamp < TREND_CONFIG.cacheExpiry) {
-      log('キャッシュからデータを使用します', 'debug');
-      return trendDataCache.mercari[cacheKey];
-    }
-    
-    // 1. メルカリのデータを収集
-    log('メルカリデータを収集中...', 'info');
-    const mercariItems = await fetchMercariItems(category, period);
-    
-    // 2. Amazonデータの収集（メルカリアイテムの一部についてのみ）
-    log('Amazon情報を収集中...', 'info');
-    const enrichedItems = await enrichWithAmazonData(mercariItems);
-    
-    // 3. 結果データを作成
-    const resultData = {
-      category: getCategoryName(category),
-      period: getPeriodName(period),
-      timestamp: Date.now(),
-      items: enrichedItems
-    };
-    
-    // キャッシュに保存
-    trendDataCache.mercari[cacheKey] = resultData;
-    
-    // バックグラウンドにもキャッシュを通知
-    chrome.runtime.sendMessage({
-      action: 'updateTrendCache',
-      trendData: resultData
-    });
-    
-    return resultData;
-  } catch (error) {
-    log(`トレンド分析でエラー: ${error.message}`, 'error');
-    throw error;
-  }
-}
-
-/**
- * メルカリページから商品データを実際に収集
- * @param {string} category - カテゴリID
- * @param {string} period - 期間（daily/weekly/monthly）
- * @return {Promise<Array>} 商品データの配列
- */
-async function fetchMercariItems(category, period) {
-  try {
-    // 商品データ配列
-    let items = [];
-    
-    // 現在のページがメルカリかどうかチェック
-    if (window.location.hostname.includes('mercari.com')) {
-      // 表示されている商品アイテムを収集
-      items = extractVisibleItems();
-      
-      // 十分なアイテム数が取れなかった場合、検索ページからも取得
-      if (items.length < TREND_CONFIG.maxItems) {
-        try {
-          // 新しいタブでカテゴリページを開かずに、XHRで取得する方式
-          const additionalItems = await fetchItemsViaXHR(category, period);
-          
-          // 重複を避けつつマージ
-          const existingIds = new Set(items.map(item => item.id));
-          for (const item of additionalItems) {
-            if (!existingIds.has(item.id)) {
-              items.push(item);
-              existingIds.add(item.id);
-            }
-          }
-        } catch (err) {
-          log(`追加アイテム取得中にエラー: ${err.message}`, 'warning');
-        }
-      }
-    } else {
-      // メルカリページが開かれていない場合
-      log('メルカリページが開かれていません。代替データを使用します。', 'warning');
-      
-      // 以前のキャッシュがあれば使用
-      const cacheKey = `${category}_${period}`;
-      if (trendDataCache.mercari[cacheKey]) {
-        return trendDataCache.mercari[cacheKey].items;
-      }
-      
-      // 他の方法でデータ取得を試みる
-      items = await fetchItemsViaXHR(category, period);
-    }
-    
-    // 最大表示数に制限
-    return items.slice(0, TREND_CONFIG.maxItems);
-  } catch (error) {
-    log(`メルカリデータ収集エラー: ${error.message}`, 'error');
-    throw error;
-  }
-}
-
-/**
- * 現在のページから商品情報を抽出
- * @return {Array} 商品データの配列
- */
-function extractVisibleItems() {
-  try {
-    const items = [];
-    
-    // 商品アイテム要素を取得（様々なセレクタに対応）
-    const itemElements = document.querySelectorAll(
-      'li[data-testid="item-cell"], div[data-testid="item-cell"], a[data-testid="thumbnail-item-container"], ' +
-      'article[data-testid^="item-"], a[href*="/item/m"], div[class*="item-card"], div[class*="ItemCard"], ' +
-      '.merItemThumbnail, .merItemCell, .merItem, .ItemView, .merItemList > li, .merItemList > div'
-    );
-    
-    // 各アイテムを処理
-    for (const element of itemElements) {
-      try {
-        // 商品ID（URLから抽出）
-        let id = '';
-        let url = '';
-        const linkElement = element.querySelector('a[href*="/item/"]') || element;
-        if (linkElement.href) {
-          url = linkElement.href;
-          const match = linkElement.href.match(/\/item\/([^/?]+)/);
-          if (match) id = match[1];
-        }
-        
-        // 商品名
-        const nameElement = element.querySelector(
-          '.item-name, [data-testid="thumbnail-item-name"], .ItemName, .item-title, .item-label, h3, h4'
-        );
-        const name = nameElement ? nameElement.textContent.trim() : '';
-        
-        // 価格
-        const priceElement = element.querySelector(
-          '.item-price, [data-testid="price"], .price, .ItemPrice'
-        );
-        const priceText = priceElement ? priceElement.textContent.trim() : '';
-        const priceMatch = priceText.match(/[0-9,]+/);
-        const price = priceMatch ? priceMatch[0] : '';
-        
-        // 画像URL
-        const imgElement = element.querySelector('img');
-        const imageUrl = imgElement ? imgElement.src : '';
-        
-        // カテゴリ
-        let category = '不明';
-        const categoryElement = element.querySelector('.item-category');
-        if (categoryElement) {
-          category = categoryElement.textContent.trim();
-        }
-        
-        // 必須項目があれば追加
-        if (id && name && price) {
-          items.push({
-            id,
-            name,
-            price: formatPrice(price),
-            rawPrice: parseInt(price.replace(/,/g, '')),
-            imageUrl,
-            url,
-            category,
-            source: 'mercari',
-            date: new Date().toISOString(),
-            views: Math.floor(Math.random() * 1000) + 200, // 仮データ（実際には表示されていない）
-            likeCount: Math.floor(Math.random() * 50) + 5  // 仮データ（実際には表示されていない）
-          });
-        }
-      } catch (error) {
-        log(`商品抽出エラー: ${error.message}`, 'debug');
-      }
-    }
-    
-    log(`表示中の商品から${items.length}件のアイテムを抽出しました`, 'info');
-    return items;
-  } catch (error) {
-    log(`ページからのアイテム抽出でエラー: ${error.message}`, 'error');
-    return [];
-  }
-}
-
-/**
- * XHR経由でメルカリの商品情報を取得（非同期）
- * @param {string} category - カテゴリID
- * @param {string} period - 期間（daily/weekly/monthly）
- * @return {Promise<Array>} 商品データの配列
- */
-async function fetchItemsViaXHR(category, period) {
-  return new Promise((resolve) => {
-    // サンプルデータを生成
-    setTimeout(() => {
-      const sampleItems = generateSampleItems(category, period, 20);
-      resolve(sampleItems);
-    }, TREND_CONFIG.requestDelay);
-  });
-}
-
-/**
- * メルカリ商品情報をAmazonデータで拡充
- * @param {Array} items - メルカリ商品データの配列
- * @return {Promise<Array>} 拡充された商品データの配列
- */
-async function enrichWithAmazonData(items) {
-  // 実際に使用する場合は、最初の数アイテム（例: 5件）のみを処理
-  const itemsToEnrich = items.slice(0, 5);
-  
-  for (const item of itemsToEnrich) {
-    try {
-      // キャッシュチェック
-      if (trendDataCache.amazon[item.name]) {
-        const cachedData = trendDataCache.amazon[item.name];
-        item.amazonInfo = cachedData;
-        continue;
-      }
-      
-      // 実際の実装では、以下のようにAmazonから情報を取得する
-      // この例では、サンプルデータを使用
-      const amazonInfo = await mockSearchAmazon(item.name);
-      
-      // 情報を商品データに追加
-      item.amazonInfo = amazonInfo;
-      
-      // キャッシュに保存
-      trendDataCache.amazon[item.name] = amazonInfo;
-      
-      // リクエスト間隔を空ける（レート制限を避けるため）
-      await new Promise(resolve => setTimeout(resolve, TREND_CONFIG.requestDelay));
-    } catch (error) {
-      log(`Amazon情報取得エラー (${item.name}): ${error.message}`, 'warning');
-      // エラー時は空のデータを設定
-      item.amazonInfo = { price: null, url: null, available: false };
-    }
-  }
-  
-  return items;
-}
-
-/**
- * Amazonでの商品検索をモック
- * @param {string} keyword - 検索キーワード
- * @return {Promise<Object>} 検索結果
- */
-async function mockSearchAmazon(keyword) {
-  return new Promise((resolve) => {
-    // モックデータ
-    const mockPrice = Math.floor(Math.random() * 5000) + 5000;
-    const isAvailable = Math.random() > 0.2; // 80%の確率で在庫あり
-    
-    // 50%の確率で割引あり
-    const hasDiscount = Math.random() > 0.5;
-    const originalPrice = hasDiscount ? mockPrice + Math.floor(mockPrice * 0.2) : null;
-    
-    // Amazonの製品ページURL
-    const encodedKeyword = encodeURIComponent(keyword);
-    const searchUrl = TREND_CONFIG.amazonSearchUrl.replace('%s', encodedKeyword);
-    
-    resolve({
-      price: mockPrice.toLocaleString(),
-      originalPrice: originalPrice ? originalPrice.toLocaleString() : null,
-      available: isAvailable,
-      prime: Math.random() > 0.5, // 50%の確率でPrime対応
-      url: searchUrl,
-      reviewCount: Math.floor(Math.random() * 1000),
-      rating: (3 + Math.random() * 2).toFixed(1) // 3.0 ~ 5.0
-    });
-  });
-}
-
-/**
- * モックの商品データを生成
- * @param {string} category - カテゴリID
- * @param {string} period - 期間（daily/weekly/monthly）
- * @param {number} count - 生成する商品数
- * @return {Array} 商品データの配列
- */
-function generateSampleItems(category, period, count) {
-  // サンプルのブランド名
-  const brands = ['Apple', 'Nintendo', 'Sony', 'NIKE', 'adidas', 'UNIQLO', 'MUJI', 'LEGO', 'Disney', 'ZARA'];
-  
-  // サンプル商品タイプ
-  let productTypes = [];
-  
-  // カテゴリによって商品タイプを変更
-  switch (category) {
-    case '1': // レディース
-      productTypes = ['ワンピース', 'スカート', 'バッグ', 'コート', 'ニット', 'パンプス', 'サンダル', 'ジャケット'];
-      break;
-    case '2': // メンズ
-      productTypes = ['シャツ', 'パンツ', 'スニーカー', 'ジャケット', 'コート', 'バッグ', 'スーツ', 'ネクタイ'];
-      break;
-    case '8': // 家電・スマホ
-      productTypes = ['スマホ', 'タブレット', 'イヤホン', 'ノートPC', 'ヘッドホン', 'スマートウォッチ', 'カメラ', '掃除機'];
-      break;
-    case '6': // おもちゃ・ホビー
-      productTypes = ['フィギュア', 'プラモデル', 'ゲーム', 'カードゲーム', 'ぬいぐるみ', 'ミニカー', 'ドローン', 'ラジコン'];
-      break;
-    default:
-      productTypes = ['シャツ', 'バッグ', 'スニーカー', 'ワンピース', 'フィギュア', 'スマホ', 'ゲーム', 'イヤホン'];
-  }
-  
-  // サンプル商品を生成
-  const items = [];
-  for (let i = 0; i < count; i++) {
-    // ランダムな商品名の生成
-    const brand = brands[Math.floor(Math.random() * brands.length)];
-    const type = productTypes[Math.floor(Math.random() * productTypes.length)];
-    const name = `${brand} ${type} ${Math.floor(Math.random() * 1000)}`;
-    
-    // ランダムな価格
-    const basePrice = 1000 + Math.floor(Math.random() * 20000);
-    
-    // ランダムな日時（最近の2週間以内）
-    const date = new Date();
-    date.setDate(date.getDate() - Math.floor(Math.random() * 14));
-    
-    // 商品IDを生成
-    const id = 'm' + Math.floor(Math.random() * 1000000000);
-    
-    // 商品情報を作成
-    items.push({
-      id,
-      name,
-      price: basePrice.toLocaleString(),
-      rawPrice: basePrice,
-      imageUrl: `https://placehold.jp/150x150.png?text=${encodeURIComponent(brand)}`,
-      url: `https://jp.mercari.com/item/${id}`,
-      category: getCategoryName(category),
-      source: 'mercari',
-      date: date.toISOString(),
-      views: 100 + Math.floor(Math.random() * 1000),
-      likeCount: Math.floor(Math.random() * 50)
-    });
-  }
-  
-  return items;
-}
-
-/**
- * カテゴリIDから名前を取得
- * @param {string} categoryId - カテゴリID
- * @return {string} カテゴリ名
- */
-function getCategoryName(categoryId) {
-  const categories = {
-    'all': 'すべてのカテゴリ',
-    '1': 'レディース',
-    '2': 'メンズ',
-    '3': 'ベビー・キッズ',
-    '4': 'インテリア・住まい',
-    '5': '本・音楽・ゲーム',
-    '6': 'おもちゃ・ホビー',
-    '7': 'コスメ・香水・美容',
-    '8': '家電・スマホ・カメラ',
-    '9': 'スポーツ・レジャー',
-    '10': 'ハンドメイド',
-    '11': '自動車・バイク',
-    '12': 'その他'
-  };
-  
-  return categories[categoryId] || 'すべてのカテゴリ';
-}
-
-/**
- * 期間IDから名前を取得
- * @param {string} periodId - 期間ID
- * @return {string} 期間名
- */
-function getPeriodName(periodId) {
-  const periods = {
-    'daily': '24時間',
-    'weekly': '1週間',
-    'monthly': '1ヶ月'
-  };
-  
-  return periods[periodId] || '24時間';
-}
-
-// 価格をフォーマットする
-function formatPrice(price) {
-  if (!price) return '0';
-  // カンマを削除して数値に変換
-  const numericPrice = price.replace(/[^\d]/g, '');
-  // 3桁ごとにカンマを挿入
-  return parseInt(numericPrice).toLocaleString();
-}
-
-// 日付をフォーマットする
-function formatTimestamp(timestamp) {
-  const date = new Date(timestamp);
-  return date.toLocaleString('ja-JP', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-}
-
-// 経過時間を表示用のテキストに変換
-function getTimeAgo(date) {
-  const now = new Date();
-  const diff = now.getTime() - date.getTime();
-  
-  const seconds = Math.floor(diff / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-  
-  if (days > 0) {
-    return `${days}日前`;
-  } else if (hours > 0) {
-    return `${hours}時間前`;
-  } else if (minutes > 0) {
-    return `${minutes}分前`;
-  } else {
-    return 'たった今';
-  }
-}
-
 // 初期化: ページロード時の処理
 window.addEventListener('load', function() {
   // ストレージから設定を読み込み
   chrome.storage.local.get(
-    ['isFilterActive', 'customNgWords', 'controlPanelVisible', 'productList', 'inventoryList'], 
+    ['isFilterActive', 'customNgWords', 'controlPanelVisible', 'productList', 'inventoryList', 'buttonsEnabled'], 
     function(result) {
       // フィルタの有効/無効状態を復元
       if (result.isFilterActive !== undefined) {
@@ -3687,6 +3461,14 @@ window.addEventListener('load', function() {
       // コントロールパネル表示状態を復元
       if (result.controlPanelVisible !== undefined) {
         controlPanelVisible = result.controlPanelVisible;
+      }
+      
+      // ボタン表示設定を復元
+      if (result.buttonsEnabled !== undefined) {
+        buttonsEnabled = result.buttonsEnabled;
+      } else {
+        // デフォルトはtrueに設定
+        chrome.storage.local.set({buttonsEnabled: true});
       }
       
       // 商品リストを復元

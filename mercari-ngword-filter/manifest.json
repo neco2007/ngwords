@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "メルカリNGワードブロッカー",
-  "version": "2.1.0",
-  "description": "メルカリで指定したNGワードを含む商品を強力にブロックし、リスト追加・在庫管理・Amazon検索機能を提供します",
+  "version": "2.2.0",
+  "description": "メルカリで指定したNGワードを含む商品を強力にブロックし、トレンド分析、Amazon検索、リスト管理機能を提供",
   "permissions": [
     "storage",
     "activeTab",
@@ -13,7 +13,7 @@
     "https://jp.mercari.com/*",
     "https://www.mercari.com/*",
     "https://www.amazon.co.jp/*",
-    "http://160.251.212.163/*"
+    "https://trends.google.com/*"
   ],
   "action": {
     "default_icon": {
@@ -38,6 +38,12 @@
   "background": {
     "service_worker": "background.js"
   },
+  "web_accessible_resources": [
+    {
+      "resources": ["trends.html", "images/*"],
+      "matches": ["https://jp.mercari.com/*", "https://www.mercari.com/*"]
+    }
+  ],
   "icons": {
     "16": "images/icon16.png",
     "48": "images/icon48.png",

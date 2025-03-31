@@ -4,241 +4,166 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>メルカリNGワードブロッカー</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
-    body {
-      font-family: 'Hiragino Sans', 'Meiryo', sans-serif;
-      width: 340px;
-      padding: 15px;
+    :root {
+      --primary: #ff4081;
+      --primary-dark: #c60055;
+      --primary-light: #ff79b0;
+      --secondary: #2196f3;
+      --secondary-dark: #0069c0;
+      --secondary-light: #6ec6ff;
+      --accent: #ffc107;
+      --text-primary: #212121;
+      --text-secondary: #757575;
+      --background: #f5f5f5;
+      --background-card: #ffffff;
+      --border: #e0e0e0;
+      --success: #4caf50;
+      --info: #2196f3;
+      --warning: #ff9800;
+      --error: #f44336;
+    }
+
+    * {
+      box-sizing: border-box;
       margin: 0;
-      background: linear-gradient(135deg, #fffde7 0%, #fff8e1 100%);
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      width: 340px;
+      margin: 0;
+      background: var(--background);
+      color: var(--text-primary);
+      line-height: 1.5;
+    }
+    
+    header {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      padding: 16px;
+      color: white;
+      text-align: center;
+      border-radius: 0 0 4px 4px;
+      position: relative;
+      z-index: 10;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
     
     h1 {
-      font-size: 16px;
-      margin-bottom: 15px;
-      color: #5d4037;
-      padding-bottom: 8px;
-      border-bottom: 1px solid #f0e68c;
+      font-size: 18px;
+      margin: 0;
       display: flex;
-      justify-content: space-between;
+      justify-content: center;
       align-items: center;
-      background: linear-gradient(to right, #daa520, #ffd700);
-      padding: 8px 12px;
-      border-radius: 8px;
-      color: #5d4037;
-      text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      gap: 8px;
     }
     
-    .container {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-    }
-    
-    .section {
-      margin-bottom: 15px;
-      background-color: white;
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-    }
-    
-    .section-title {
-      font-weight: bold;
-      margin-bottom: 8px;
-      font-size: 14px;
-      color: #4CAF50;
-    }
-    
-    textarea {
-      width: 100%;
-      height: 150px;
-      padding: 8px;
-      box-sizing: border-box;
-      border: 1px solid #daa520;
-      border-radius: 4px;
-      resize: none;
-      font-size: 13px;
-      line-height: 1.4;
-      background-color: #fffef7;
-    }
-    
-    textarea:focus {
-      border-color: #d4af37;
-      outline: none;
-      box-shadow: 0 0 3px rgba(218, 165, 32, 0.3);
-    }
-    
-    .description {
-      font-size: 12px;
-      color: #666;
-      margin-bottom: 10px;
-      line-height: 1.4;
-    }
-    
-    .form-group {
-      margin-bottom: 12px;
-    }
-    
-    label {
-      display: block;
-      margin-bottom: 5px;
-      font-size: 13px;
-      color: #555;
-    }
-    
-    select {
-      width: 100%;
-      padding: 6px 8px;
-      border: 1px solid #daa520;
-      border-radius: 4px;
-      background-color: white;
-      font-size: 13px;
-    }
-    
-    select:focus {
-      border-color: #d4af37;
-      outline: none;
-    }
-    
-    button {
-      background: linear-gradient(to right, #daa520, #ffd700);
-      color: #5d4037;
-      border: none;
-      padding: 10px 16px;
-      text-align: center;
-      text-decoration: none;
-      display: inline-block;
-      font-size: 14px;
-      border-radius: 20px;
-      cursor: pointer;
-      width: 100%;
-      transition: all 0.2s;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      text-shadow: 0 1px 1px rgba(255, 255, 255, 0.3);
-    }
-    
-    button:hover {
-      background: linear-gradient(to right, #d4af37, #ffdf00);
-      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
-    }
-    
-    .status {
-      margin-top: 10px;
-      font-size: 12px;
-      color: #666;
-      text-align: center;
-      min-height: 18px;
-    }
-    
-    .status.success {
-      color: #4CAF50;
-    }
-    
-    .status.error {
-      color: #f44336;
-    }
-    
-    .info {
-      font-size: 13px;
-      color: #333;
-      margin-bottom: 15px;
-      background-color: #f5f5f5;
-      padding: 12px;
-      border-radius: 6px;
-      line-height: 1.4;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border: 1px solid #f0e68c;
-      background: linear-gradient(135deg, #fffef7 0%, #fff8e1 100%);
-    }
-    
-    .count-info {
-      display: inline-block;
-    }
-    
-    .count-number {
-      font-weight: bold;
-      color: #d4af37;
+    h1::before {
+      content: '📊';
+      font-size: 20px;
     }
     
     .status-badge {
-      font-size: 11px;
-      padding: 3px 6px;
-      border-radius: 3px;
-      background-color: #4CAF50;
-      color: white;
-    }
-    
-    .status-active {
-      background-color: #4CAF50;
-      color: white;
-      padding: 2px 8px;
-      border-radius: 3px;
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      padding: 4px 8px;
+      border-radius: 12px;
       font-size: 12px;
-      font-weight: bold;
+      font-weight: 500;
     }
     
-    .status-inactive {
-      background-color: #f44336;
+    .active {
+      background-color: var(--success);
       color: white;
-      padding: 2px 8px;
-      border-radius: 3px;
-      font-size: 12px;
-      font-weight: bold;
     }
     
-    .checkbox-container {
+    .inactive {
+      background-color: var(--error);
+      color: white;
+    }
+    
+    .container {
+      padding: 16px;
+    }
+    
+    .info-box {
+      background-color: var(--background-card);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      margin-bottom: 10px;
     }
     
-    .checkbox-container input[type="checkbox"] {
-      margin-right: 8px;
+    .count-info {
+      display: flex;
+      flex-direction: column;
     }
     
-    .checkbox-container label {
-      margin-bottom: 0;
-      font-size: 13px;
-      display: inline;
+    .count-number {
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--primary);
+    }
+    
+    .count-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    
+    .status-info {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    
+    .status-dot.online {
+      background-color: var(--success);
+    }
+    
+    .status-dot.offline {
+      background-color: var(--error);
+    }
+    
+    .status-text {
+      font-size: 12px;
+      color: var(--text-secondary);
     }
     
     .tab-container {
       display: flex;
-      margin-bottom: 15px;
-      border-bottom: 1px solid #f0e68c;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 16px;
     }
     
     .tab {
-      padding: 8px 12px;
+      padding: 8px 16px;
       cursor: pointer;
-      font-size: 13px;
-      border: 1px solid #f0e68c;
-      border-bottom: none;
-      border-radius: 4px 4px 0 0;
-      margin-right: 5px;
-      background-color: #fffef7;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
     }
     
     .tab.active {
-      background: linear-gradient(to bottom, #ffd700, #fffef7);
-      border-color: #daa520;
-      position: relative;
-      color: #5d4037;
-      font-weight: bold;
+      color: var(--primary);
+      border-bottom-color: var(--primary);
     }
     
-    .tab.active::after {
-      content: '';
-      position: absolute;
-      bottom: -1px;
-      left: 0;
-      right: 0;
-      height: 1px;
-      background-color: #fffef7;
+    .tab:hover {
+      color: var(--primary-light);
     }
     
     .tab-content {
@@ -249,1046 +174,507 @@
       display: block;
     }
     
-    .shortcut-hint {
-      font-size: 11px;
-      color: #888;
-      text-align: right;
-      margin-top: 4px;
-    }
-
-    /* トレンド分析用のスタイル */
-    .trend-filter {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 15px;
-    }
-    
-    .trend-select {
-      flex: 1;
-      padding: 6px 8px;
-      border: 1px solid #daa520;
-      border-radius: 4px;
-      font-size: 13px;
-    }
-    
-    .trend-select:focus {
-      border-color: #d4af37;
-      outline: none;
-    }
-    
-    .trend-button {
-      background: linear-gradient(to right, #daa520, #ffd700);
-      color: #5d4037;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 13px;
-    }
-    
-    .trend-button:hover {
-      background: linear-gradient(to right, #d4af37, #ffdf00);
-    }
-    
-    .trend-list {
-      max-height: 300px;
-      overflow-y: auto;
-      border: 1px solid #f0e68c;
-      border-radius: 4px;
-      padding: 0;
-      margin: 0;
-      list-style: none;
-      background-color: #fff;
-    }
-    
-    .trend-item {
-      padding: 8px 12px;
-      border-bottom: 1px solid #f0e68c;
+    .switch-container {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 13px;
+      margin-bottom: 16px;
     }
     
-    .trend-item:last-child {
-      border-bottom: none;
+    .switch-label {
+      font-weight: 500;
+      font-size: 14px;
     }
     
-    .trend-rank {
-      background: linear-gradient(to right, #daa520, #ffd700);
-      color: #5d4037;
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-weight: bold;
-      font-size: 12px;
-      margin-right: 10px;
-      flex-shrink: 0;
-    }
-    
-    .trend-rank.top-3 {
-      background: linear-gradient(to right, #ffa000, #ffca28);
-    }
-    
-    .trend-rank.top-1 {
-      background: linear-gradient(to right, #ff8f00, #ffb300);
-    }
-    
-    .trend-info {
-      flex: 1;
-    }
-    
-    .trend-name {
-      margin-bottom: 2px;
-      font-weight: bold;
-    }
-    
-    .trend-meta {
-      font-size: 11px;
-      color: #666;
-      display: flex;
-      gap: 10px;
-    }
-    
-    .trend-price {
-      font-weight: bold;
-      color: #333;
-      white-space: nowrap;
-    }
-
-    .trend-loading {
-      text-align: center;
-      padding: 20px;
-      color: #666;
-    }
-
-    .trend-placeholder {
-      text-align: center;
-      padding: 20px;
-      color: #666;
-      font-style: italic;
-    }
-    
-    .spinner {
-      display: inline-block;
-      width: 20px;
-      height: 20px;
-      border: 3px solid rgba(218, 165, 32, 0.1);
-      border-radius: 50%;
-      border-top-color: #daa520;
-      animation: spin 1s linear infinite;
-      margin-right: 10px;
-      vertical-align: middle;
-    }
-    
-    /* チャート関連のスタイル */
-    .chart-container {
+    .switch {
       position: relative;
-      height: 250px;
-      width: 100%;
-      margin: 15px 0;
+      display: inline-block;
+      width: 48px;
+      height: 24px;
     }
     
-    .chart-tabs {
-      display: flex;
-      margin: 15px 0 10px;
-      border-bottom: 1px solid #f0e68c;
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
     }
     
-    .chart-tab {
-      padding: 6px 10px;
+    .slider {
+      position: absolute;
       cursor: pointer;
-      font-size: 12px;
-      border: 1px solid #f0e68c;
-      border-bottom: none;
-      border-radius: 4px 4px 0 0;
-      margin-right: 3px;
-      background-color: #fffef7;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      border-radius: 24px;
+      transition: .3s;
     }
     
-    .chart-tab.active {
-      background: linear-gradient(to bottom, #ffd700, #fffef7);
-      border-bottom-color: #fffef7;
-      margin-bottom: -1px;
-      font-weight: bold;
-      color: #5d4037;
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      border-radius: 50%;
+      transition: .3s;
     }
     
-    .amazon-comparison {
-      margin-top: 15px;
-      background-color: #fffef7;
-      border: 1px solid #f0e68c;
+    input:checked + .slider {
+      background-color: var(--primary);
+    }
+    
+    input:focus + .slider {
+      box-shadow: 0 0 1px var(--primary);
+    }
+    
+    input:checked + .slider:before {
+      transform: translateX(24px);
+    }
+    
+    .section-title {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: var(--primary-dark);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .section-title::before {
+      content: '';
+      width: 4px;
+      height: 14px;
+      background-color: var(--primary);
+      display: inline-block;
+      border-radius: 2px;
+    }
+    
+    textarea {
+      width: 100%;
+      height: 120px;
+      padding: 8px;
+      border: 1px solid var(--border);
       border-radius: 4px;
-      padding: 10px;
-    }
-    
-    .amazon-comparison-title {
+      resize: none;
       font-size: 13px;
-      font-weight: bold;
-      color: #5d4037;
+      font-family: 'Noto Sans JP', sans-serif;
       margin-bottom: 8px;
     }
     
-    .comparison-item {
+    textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    
+    .button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .primary-button {
+      background-color: var(--primary);
+      color: white;
+      width: 100%;
+      margin-top: 8px;
+    }
+    
+    .primary-button:hover {
+      background-color: var(--primary-dark);
+    }
+    
+    .secondary-button {
+      background-color: var(--secondary);
+      color: white;
+    }
+    
+    .secondary-button:hover {
+      background-color: var(--secondary-dark);
+    }
+    
+    .feature-card {
+      background-color: var(--background-card);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .feature-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .feature-icon {
+      font-size: 24px;
+      color: var(--primary);
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: rgba(255, 64, 129, 0.1);
+      border-radius: 8px;
+    }
+    
+    .feature-content {
+      flex: 1;
+    }
+    
+    .feature-title {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    
+    .feature-description {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    
+    .stats-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    
+    .stat-card {
+      flex: 1;
+      background-color: var(--background-card);
+      border-radius: 8px;
+      padding: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+    
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background-color: #e0e0e0;
+      border-radius: 3px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background-color: var(--primary);
+      border-radius: 3px;
+    }
+    
+    .btn-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    
+    .btn-group button {
+      flex: 1;
+    }
+    
+    .shortcut-hint {
+      font-size: 11px;
+      color: var(--text-secondary);
+      text-align: right;
+      margin-top: 4px;
+    }
+    
+    .keyword-list {
+      max-height: 120px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      margin-bottom: 12px;
+      background-color: var(--background-card);
+    }
+    
+    .keyword-item {
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--border);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 8px 0;
-      border-bottom: 1px solid #f0e68c;
-      font-size: 12px;
+      font-size: 13px;
     }
     
-    .comparison-item:last-child {
+    .keyword-item:last-child {
       border-bottom: none;
     }
     
-    .price-difference {
+    .keyword-delete {
+      color: var(--error);
+      cursor: pointer;
       font-weight: bold;
+      padding: 2px 6px;
     }
     
-    .price-lower {
-      color: #4CAF50;
+    .keyword-input-group {
+      display: flex;
+      gap: 8px;
     }
     
-    .price-higher {
-      color: #f44336;
+    .keyword-input {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 13px;
     }
     
-    .price-equal {
-      color: #ff9800;
+    .keyword-input:focus {
+      outline: none;
+      border-color: var(--primary);
     }
     
-    /* 新機能: リストと在庫管理 */
-    .list-management {
+    .add-button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 0 12px;
+      cursor: pointer;
+    }
+    
+    .add-button:hover {
+      background-color: var(--primary-dark);
+    }
+    
+    .settings-group {
+      margin-bottom: 16px;
+    }
+    
+    .settings-option {
       display: flex;
       justify-content: space-between;
-      gap: 10px;
-      margin-top: 15px;
+      align-items: center;
+      margin-bottom: 12px;
     }
     
-    .list-button {
-      background: linear-gradient(to right, #ff80ab, #ff4081);
+    .settings-label {
+      font-size: 13px;
+    }
+    
+    .status {
+      margin-top: 16px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-align: center;
+      min-height: 18px;
+    }
+    
+    .status.success {
+      color: var(--success);
+    }
+    
+    .status.error {
+      color: var(--error);
+    }
+    
+    .trend-analysis-button {
+      background: linear-gradient(to right, var(--secondary), var(--secondary-dark));
       color: white;
       border: none;
-      padding: 8px 12px;
-      border-radius: 20px;
+      border-radius: 8px;
+      padding: 12px;
+      width: 100%;
+      text-align: center;
+      font-weight: 700;
+      font-size: 14px;
+      margin-top: 16px;
       cursor: pointer;
-      font-size: 13px;
-      flex: 1;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    }
-    
-    .list-button:hover {
-      background: linear-gradient(to right, #f06292, #e91e63);
-    }
-    
-    .inventory-button {
-      background: linear-gradient(to right, #90caf9, #42a5f5);
-      color: white;
-      border: none;
-      padding: 8px 12px;
-      border-radius: 20px;
-      cursor: pointer;
-      font-size: 13px;
-      flex: 1;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    }
-    
-    .inventory-button:hover {
-      background: linear-gradient(to right, #64b5f6, #2196f3);
-    }
-    
-    .list-count {
-      background-color: white;
-      color: #e91e63;
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      display: inline-flex;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      transition: all 0.2s;
+      display: flex;
       justify-content: center;
       align-items: center;
-      font-size: 11px;
-      font-weight: bold;
-      margin-left: 5px;
+      gap: 8px;
     }
     
-    .sync-count {
-      background-color: white;
-      color: #2196f3;
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      display: inline-flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 11px;
-      font-weight: bold;
-      margin-left: 5px;
+    .trend-analysis-button:hover {
+      background: linear-gradient(to right, var(--secondary-dark), var(--secondary-dark));
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     }
     
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    .trend-analysis-button::before {
+      content: '📈';
+      font-size: 18px;
+    }
+    
+    footer {
+      padding: 12px;
+      text-align: center;
+      font-size: 11px;
+      color: var(--text-secondary);
+      border-top: 1px solid var(--border);
+      margin-top: 16px;
     }
   </style>
 </head>
 <body>
-  <h1>
-    メルカリNGワードブロッカー
-    <span class="status-inactive" id="filterStatus">無効</span>
-  </h1>
+  <header>
+    <h1>メルカリNGワードブロッカー</h1>
+    <div class="status-badge inactive" id="filterStatus">無効</div>
+  </header>
   
   <div class="container">
-    <div id="ngWordCount" class="info">
-      <span class="count-info">
-        <span class="count-number">多数</span>のNGワードが設定されています
-      </span>
-      <span class="status-badge">待機中</span>
+    <div class="info-box">
+      <div class="count-info">
+        <span class="count-number" id="ngWordCount">0</span>
+        <span class="count-label">NGワード設定済み</span>
+      </div>
+      <div class="status-info">
+        <div class="status-dot offline" id="statusDot"></div>
+        <span class="status-text" id="statusText">未接続</span>
+      </div>
     </div>
     
     <div class="tab-container">
       <div class="tab active" data-tab="basic">基本設定</div>
       <div class="tab" data-tab="advanced">詳細設定</div>
-      <div class="tab" data-tab="analysis">トレンド分析</div>
-      <div class="tab" data-tab="list">リスト管理</div>
+      <div class="tab" data-tab="features">機能</div>
     </div>
     
     <!-- 基本設定タブ -->
     <div id="basic-tab" class="tab-content active">
-      <div class="section">
-        <div class="section-title">NGワード設定</div>
-        <p class="description">
-          ブランド名などのNGワードは既に自動的にブロックされています。<br>
-          以下に追加でブロックしたいNGワードを1行ずつ入力してください。
-        </p>
-        
-        <textarea id="ngWordsInput" placeholder="例：偽物&#10;コピー品&#10;レプリカ"></textarea>
-        <div class="shortcut-hint">Ctrl + Enterで保存</div>
+      <div class="switch-container">
+        <span class="switch-label">NGワードフィルター</span>
+        <label class="switch">
+          <input type="checkbox" id="ng-filter-toggle">
+          <span class="slider"></span>
+        </label>
       </div>
+      
+      <div class="section-title">カスタムNGワード</div>
+      <div id="ng-keyword-list" class="keyword-list">
+        <div class="keyword-item">カスタムNGワードはありません</div>
+      </div>
+      
+      <div class="keyword-input-group">
+        <input type="text" id="ng-new-keyword" class="keyword-input" placeholder="新しいNGワードを入力">
+        <button id="ng-add-keyword" class="add-button">追加</button>
+      </div>
+      <div class="shortcut-hint">Ctrl + Enterで追加</div>
+      
+      <button id="saveButton" class="button primary-button">設定を保存</button>
     </div>
     
     <!-- 詳細設定タブ -->
     <div id="advanced-tab" class="tab-content">
-      <div class="section">
-        <div class="section-title">表示設定</div>
-        
-        <div class="checkbox-container">
-          <input type="checkbox" id="controlPanel" checked>
-          <label for="controlPanel">コントロールパネルを表示する</label>
+      <div class="section-title">表示設定</div>
+      <div class="settings-group">
+        <div class="settings-option">
+          <span class="settings-label">コントロールパネルを表示</span>
+          <label class="switch">
+            <input type="checkbox" id="controlPanel" checked>
+            <span class="slider"></span>
+          </label>
         </div>
         
-        <div class="checkbox-container">
-          <input type="checkbox" id="redirectHome" checked>
-          <label for="redirectHome">NGワード検索時にトップページにリダイレクトする</label>
+        <div class="settings-option">
+          <span class="settings-label">カスタムボタンを表示</span>
+          <label class="switch">
+            <input type="checkbox" id="showCustomButtons" checked>
+            <span class="slider"></span>
+          </label>
         </div>
         
-        <p class="description">
-          コントロールパネルを非表示にしても、拡張機能アイコンをクリックすることでフィルターのオン/オフを切り替えられます。
-        </p>
+        <div class="settings-option">
+          <span class="settings-label">NGワード時にリダイレクト</span>
+          <label class="switch">
+            <input type="checkbox" id="redirectHome" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
       </div>
       
-      <div class="section">
-        <div class="section-title">カスタムボタン設定</div>
-        
-        <div class="checkbox-container">
-          <input type="checkbox" id="showCustomButtons" checked>
-          <label for="showCustomButtons">商品に追加ボタンを表示する</label>
-        </div>
-        
-        <p class="description">
-          有効にすると、ブロックされていない商品の下部に「リストに追加」と「在庫リストに追加」ボタンを表示します。
-        </p>
-      </div>
-    </div>
-    
-    <!-- トレンド分析タブ -->
-    <div id="analysis-tab" class="tab-content">
-      <div class="section">
-        <div class="section-title">メルカリトレンド分析</div>
-        <p class="description">
-          現在のメルカリで人気のある商品やトレンドをリアルタイムで分析します。
-          Amazonとの価格比較も表示されます。
-        </p>
-        
-        <div class="trend-filter">
-          <select id="trend-category" class="trend-select">
-            <option value="all">すべてのカテゴリ</option>
-            <option value="1">レディース</option>
-            <option value="2">メンズ</option>
-            <option value="3">ベビー・キッズ</option>
-            <option value="4">インテリア・住まい</option>
-            <option value="5">本・音楽・ゲーム</option>
-            <option value="6">おもちゃ・ホビー</option>
-            <option value="7">コスメ・香水・美容</option>
-            <option value="8">家電・スマホ・カメラ</option>
-            <option value="9">スポーツ・レジャー</option>
-            <option value="10">ハンドメイド</option>
-            <option value="11">自動車・バイク</option>
-            <option value="12">その他</option>
+      <div class="section-title">フィルター強度</div>
+      <div class="settings-group">
+        <div class="settings-option">
+          <label for="blockStrength" class="settings-label">ブロック強度</label>
+          <select id="blockStrength" class="keyword-input">
+            <option value="max">最大 (完全非表示)</option>
+            <option value="medium">中程度 (ぼかし表示)</option>
+            <option value="low">低 (警告表示のみ)</option>
           </select>
-          
-          <select id="trend-period" class="trend-select">
-            <option value="daily">24時間</option>
-            <option value="weekly">1週間</option>
-            <option value="monthly">1ヶ月</option>
-          </select>
-          
-          <button id="analyze-trends" class="trend-button">分析</button>
         </div>
-        
-        <!-- グラフ表示エリア -->
-        <div id="chart-container" class="chart-container" style="display: none;">
-          <div class="chart-tabs">
-            <div class="chart-tab active" data-chart="price">価格分布</div>
-            <div class="chart-tab" data-chart="category">カテゴリ分布</div>
-            <div class="chart-tab" data-chart="comparison">Amazon比較</div>
-          </div>
-          <canvas id="trend-chart"></canvas>
+      </div>
+      
+      <button id="saveAdvancedButton" class="button primary-button">詳細設定を保存</button>
+    </div>
+    
+    <!-- 機能タブ -->
+    <div id="features-tab" class="tab-content">
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-value" id="blockedCount">0</div>
+          <div class="stat-label">ブロック数</div>
         </div>
-        
-        <!-- Amazon比較セクション -->
-        <div id="amazon-comparison" class="amazon-comparison" style="display: none;">
-          <div class="amazon-comparison-title">Amazonとの価格比較</div>
-          <div id="comparison-list">
-            <!-- ここに比較リストが動的に追加されます -->
-          </div>
+        <div class="stat-card">
+          <div class="stat-value" id="listedCount">0</div>
+          <div class="stat-label">リスト登録数</div>
         </div>
-        
-        <div id="trend-results">
-          <div class="trend-placeholder">
-            「分析」ボタンをクリックして人気トレンドを確認してください
+      </div>
+      
+      <div class="feature-card" id="show-product-list">
+        <div class="feature-icon">📋</div>
+        <div class="feature-content">
+          <div class="feature-title">商品リスト管理</div>
+          <div class="feature-description">保存した商品リストを表示・管理します</div>
+        </div>
+      </div>
+      
+      <div class="feature-card" id="sync-inventory">
+        <div class="feature-icon">🔄</div>
+        <div class="feature-content">
+          <div class="feature-title">在庫データ同期</div>
+          <div class="feature-description">保存した商品データをクラウドと同期します</div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 65%;"></div>
           </div>
         </div>
       </div>
-    </div>
-    
-    <!-- リスト管理タブ -->
-    <div id="list-tab" class="tab-content">
-      <div class="section">
-        <div class="section-title">商品・在庫リスト管理</div>
-        <p class="description">
-          保存した商品リストや在庫リストを管理します。
-          メルカリページでカスタムボタンを使って商品を追加できます。
-        </p>
-        
-        <div class="list-management">
-          <button id="show-product-list" class="list-button">
-            商品リストを表示
-            <span class="list-count" id="list-count">0</span>
-          </button>
-          <button id="sync-inventory" class="inventory-button">
-            在庫データを同期
-            <span class="sync-count" id="sync-count">0</span>
-          </button>
-        </div>
-        
-        <div id="list-status" style="margin-top: 15px; text-align: center; font-size: 12px; color: #666;">
-          ステータス: 準備完了
-        </div>
+      
+      <button id="trend-analysis" class="trend-analysis-button">トレンド分析を開く</button>
+      
+      <div class="btn-group">
+        <button id="rescan-page" class="button secondary-button">ページ再スキャン</button>
+        <button id="clear-all" class="button secondary-button">全クリア</button>
       </div>
     </div>
-    
-    <button id="saveButton">設定を保存</button>
     
     <div id="status" class="status"></div>
   </div>
   
-  <!-- シンプルチャートライブラリ -->
-  <script>
-    // SimpleCharts - 軽量チャートライブラリ
-    window.SimpleCharts = {
-      // デフォルトのカラーパレット
-      colors: [
-        '#4CAF50', '#2196F3', '#FFC107', '#FF5722', '#9C27B0',
-        '#3F51B5', '#E91E63', '#009688', '#795548', '#607D8B'
-      ],
-      
-      // 棒グラフを描画
-      bar: function(canvas, data) {
-        const ctx = canvas.getContext('2d');
-        const width = canvas.width;
-        const height = canvas.height;
-        
-        // キャンバスをクリア
-        ctx.clearRect(0, 0, width, height);
-        
-        if (!data || !data.labels || !data.datasets || data.datasets.length === 0) {
-          return;
-        }
-        
-        const dataset = data.datasets[0];
-        const values = dataset.data;
-        const labels = data.labels;
-        
-        // グラフエリアの設定
-        const padding = 40;
-        const chartWidth = width - padding * 2;
-        const chartHeight = height - padding * 2;
-        
-        // 最大値を計算
-        const maxValue = Math.max(...values);
-        
-        // グラフ背景
-        ctx.fillStyle = '#fffef7';
-        ctx.fillRect(padding, padding, chartWidth, height - padding * 2);
-        
-        // X軸とY軸を描画
-        ctx.strokeStyle = '#f0e68c';
-        ctx.beginPath();
-        ctx.moveTo(padding, height - padding);
-        ctx.lineTo(width - padding, height - padding);
-        ctx.stroke();
-        
-        ctx.beginPath();
-        ctx.moveTo(padding, padding);
-        ctx.lineTo(padding, height - padding);
-        ctx.stroke();
-        
-        // バーの数
-        const barCount = values.length;
-        const barWidth = (chartWidth / barCount) * 0.7;
-        const barSpacing = (chartWidth / barCount) * 0.3;
-        
-        // バーを描画
-        values.forEach((value, index) => {
-          const barHeight = (value / maxValue) * chartHeight;
-          const x = padding + (index * (barWidth + barSpacing)) + barSpacing / 2;
-          const y = height - padding - barHeight;
-          
-          // バー（グラデーション）
-          const gradient = ctx.createLinearGradient(x, y, x, height - padding);
-          gradient.addColorStop(0, '#ffd700');
-          gradient.addColorStop(1, '#daa520');
-          ctx.fillStyle = gradient;
-          ctx.fillRect(x, y, barWidth, barHeight);
-          
-          // 値
-          ctx.fillStyle = '#5d4037';
-          ctx.textAlign = 'center';
-          ctx.font = '10px Arial';
-          ctx.fillText(value, x + barWidth / 2, y - 5);
-          
-          // ラベル
-          ctx.fillText(labels[index], x + barWidth / 2, height - padding + 15);
-        });
-      },
-      
-      // 円グラフを描画
-      pie: function(canvas, data) {
-        const ctx = canvas.getContext('2d');
-        const width = canvas.width;
-        const height = canvas.height;
-        
-        // キャンバスをクリア
-        ctx.clearRect(0, 0, width, height);
-        
-        if (!data || !data.labels || !data.datasets || data.datasets.length === 0) {
-          return;
-        }
-        
-        const dataset = data.datasets[0];
-        const values = dataset.data;
-        const labels = data.labels;
-        
-        // 中心と半径
-        const centerX = width / 2;
-        const centerY = height / 2;
-        const radius = Math.min(width, height) / 2 - 30;
-        
-        // 合計値
-        const total = values.reduce((sum, value) => sum + value, 0);
-        
-        // 各スライスを描画
-        let startAngle = 0;
-        let legendY = 20;
-        
-        // ゴールドベースのカラーパレット
-        const goldPalette = [
-          '#ffd700', '#daa520', '#b8860b', '#cd853f', '#d2b48c',
-          '#f0e68c', '#bdb76b', '#eee8aa', '#f5deb3', '#ffe4b5'
-        ];
-        
-        values.forEach((value, index) => {
-          // 角度を計算
-          const sliceAngle = (value / total) * 2 * Math.PI;
-          
-          // カラー選択
-          let color = goldPalette[index % goldPalette.length];
-          
-          // 弧を描画
-          ctx.beginPath();
-          ctx.moveTo(centerX, centerY);
-          ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle);
-          ctx.closePath();
-          
-          // 塗りつぶし
-          ctx.fillStyle = color;
-          ctx.fill();
-          
-          // スライスに境界線
-          ctx.strokeStyle = '#fff';
-          ctx.lineWidth = 2;
-          ctx.stroke();
-          
-          // パーセント表示の位置を計算
-          const middleAngle = startAngle + sliceAngle / 2;
-          const textRadius = radius * 0.7;
-          const textX = centerX + Math.cos(middleAngle) * textRadius;
-          const textY = centerY + Math.sin(middleAngle) * textRadius;
-          
-          // パーセントを表示
-          const percent = Math.round((value / total) * 100);
-          ctx.fillStyle = '#5d4037';
-          ctx.font = 'bold 12px Arial';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          if (percent > 5) { // 5%以上のスライスにだけテキスト表示
-            ctx.fillText(percent + '%', textX, textY);
-          }
-          
-          // 凡例
-          ctx.fillStyle = color;
-          ctx.fillRect(width - 150, legendY, 15, 15);
-          
-          ctx.fillStyle = '#5d4037';
-          ctx.font = '12px Arial';
-          ctx.textAlign = 'left';
-          ctx.fillText(`${labels[index]} (${value})`, width - 130, legendY + 7);
-          
-          legendY += 20;
-          startAngle += sliceAngle;
-        });
-      },
-      
-      // 比較棒グラフ
-      comparison: function(canvas, data) {
-        const ctx = canvas.getContext('2d');
-        const width = canvas.width;
-        const height = canvas.height;
-        
-        // キャンバスをクリア
-        ctx.clearRect(0, 0, width, height);
-        
-        if (!data || !data.labels || !data.datasets || data.datasets.length < 2) {
-          return;
-        }
-        
-        const labels = data.labels;
-        const datasets = data.datasets;
-        
-        // グラフエリアの設定
-        const padding = 40;
-        const chartWidth = width - padding * 2;
-        const chartHeight = height - padding * 2;
-        
-        // 最大値を計算（全データセットを考慮）
-        let maxValue = 0;
-        datasets.forEach(dataset => {
-          const datasetMax = Math.max(...dataset.data);
-          if (datasetMax > maxValue) maxValue = datasetMax;
-        });
-        
-        // グラフ背景
-        ctx.fillStyle = '#fffef7';
-        ctx.fillRect(padding, padding, chartWidth, height - padding * 2);
-        
-        // X軸とY軸を描画
-        ctx.strokeStyle = '#f0e68c';
-        ctx.beginPath();
-        ctx.moveTo(padding, height - padding);
-        ctx.lineTo(width - padding, height - padding);
-        ctx.stroke();
-        
-        ctx.beginPath();
-        ctx.moveTo(padding, padding);
-        ctx.lineTo(padding, height - padding);
-        ctx.stroke();
-        
-        // グループのカウント
-        const groupCount = labels.length;
-        const groupWidth = chartWidth / groupCount;
-        const barWidth = groupWidth * 0.35; // バーが2つあるので狭く
-        
-        // データセットごとにバーを描画
-        datasets.forEach((dataset, datasetIndex) => {
-          const values = dataset.data;
-          
-          values.forEach((value, index) => {
-            const barHeight = (value / maxValue) * chartHeight;
-            const x = padding + (index * groupWidth) + (datasetIndex * barWidth) + (groupWidth * 0.15);
-            const y = height - padding - barHeight;
-            
-            // バー（グラデーション）
-            const gradient = ctx.createLinearGradient(x, y, x, height - padding);
-            if (datasetIndex === 0) {
-              gradient.addColorStop(0, '#ffd700');
-              gradient.addColorStop(1, '#daa520');
-            } else {
-              gradient.addColorStop(0, '#ffb74d');
-              gradient.addColorStop(1, '#ff9800');
-            }
-            ctx.fillStyle = gradient;
-            ctx.fillRect(x, y, barWidth, barHeight);
-            
-            // 値
-            ctx.fillStyle = '#5d4037';
-            ctx.textAlign = 'center';
-            ctx.font = '10px Arial';
-            ctx.fillText(value, x + barWidth / 2, y - 5);
-          });
-        });
-        
-        // X軸のラベル
-        labels.forEach((label, index) => {
-          const x = padding + (index * groupWidth) + (groupWidth / 2);
-          ctx.fillStyle = '#5d4037';
-          ctx.textAlign = 'center';
-          ctx.font = '10px Arial';
-          // ラベルが長い場合は省略
-          const displayLabel = label.length > 10 ? label.substring(0, 8) + '...' : label;
-          ctx.fillText(displayLabel, x, height - padding + 15);
-        });
-        
-        // 凡例
-        const legendX = width - 150;
-        let legendY = 20;
-        
-        datasets.forEach((dataset, index) => {
-          const color = index === 0 ? '#ffd700' : '#ffb74d';
-          ctx.fillStyle = color;
-          ctx.fillRect(legendX, legendY, 15, 15);
-          
-          ctx.fillStyle = '#5d4037';
-          ctx.textAlign = 'left';
-          ctx.font = '12px Arial';
-          ctx.fillText(dataset.label, legendX + 20, legendY + 12);
-          
-          legendY += 25;
-        });
-      }
-    };
-    
-    // Chart互換API（popup.jsで利用されるため）
-    window.Chart = function(ctx, config) {
-      this.ctx = ctx;
-      this.config = config;
-      this.type = config.type;
-      this.data = config.data;
-      this.options = config.options || {};
-      
-      this.render = function() {
-        const canvas = this.ctx.canvas;
-        // キャンバスサイズを設定
-        canvas.width = canvas.parentElement.clientWidth;
-        canvas.height = 250;
-        
-        if (this.type === 'bar') {
-          SimpleCharts.bar(canvas, this.data);
-        } else if (this.type === 'pie') {
-          SimpleCharts.pie(canvas, this.data);
-        } else if (this.type === 'comparison') {
-          SimpleCharts.comparison(canvas, this.data);
-        }
-      };
-      
-      this.destroy = function() {
-        // クリーンアップ処理
-        const canvas = this.ctx.canvas;
-        this.ctx.clearRect(0, 0, canvas.width, canvas.height);
-      };
-      
-      // 初回描画
-      this.render();
-      
-      return this;
-    };
-  </script>
+  <footer>
+    © 2024 メルカリNGワードブロッカー | v2.2.0
+  </footer>
   
-  <!-- popup.js関数オーバーライド -->
-  <script>
-    // ページの読み込みが完了した後に実行
-    document.addEventListener('DOMContentLoaded', function() {
-      // グローバル変数
-      window.trendChart = null;
-      
-      // タブ切り替え設定
-      initializeTabs();
-      
-      // リスト管理タブの初期化
-      initializeListManagement();
-      
-      // データヘルパー関数（popup.jsで必要なため定義）
-      window.getPriceRanges = function(items) {
-        // 価格帯の定義
-        const ranges = [
-          { max: 1000, label: '～1,000円' },
-          { max: 3000, label: '～3,000円' },
-          { max: 5000, label: '～5,000円' },
-          { max: 10000, label: '～10,000円' },
-          { max: 30000, label: '～30,000円' },
-          { max: 50000, label: '～50,000円' },
-          { max: Infinity, label: '50,000円～' }
-        ];
-        
-        // 各価格帯ごとにカウント
-        const counts = new Array(ranges.length).fill(0);
-        
-        items.forEach(item => {
-          const price = item.rawPrice || parseInt(item.price.replace(/,/g, ''));
-          
-          for (let i = 0; i < ranges.length; i++) {
-            if (price <= ranges[i].max) {
-              counts[i]++;
-              break;
-            }
-          }
-        });
-        
-        return {
-          labels: ranges.map(r => r.label),
-          counts: counts
-        };
-      };
-      
-      window.getCategoryDistribution = function(items) {
-        // カテゴリごとに集計
-        const categoryCounts = {};
-        
-        items.forEach(item => {
-          const category = item.category || '不明';
-          categoryCounts[category] = (categoryCounts[category] || 0) + 1;
-        });
-        
-        // 上位カテゴリを抽出（最大6カテゴリ、それ以外は「その他」としてまとめる）
-        const sortedCategories = Object.entries(categoryCounts)
-          .sort((a, b) => b[1] - a[1]);
-        
-        const topCategories = sortedCategories.slice(0, 6);
-        const otherCount = sortedCategories.slice(6)
-          .reduce((sum, [_, count]) => sum + count, 0);
-        
-        const labels = topCategories.map(([category]) => category);
-        const counts = topCategories.map(([_, count]) => count);
-        
-        // 「その他」があれば追加
-        if (otherCount > 0) {
-          labels.push('その他');
-          counts.push(otherCount);
-        }
-        
-        return { labels, counts };
-      };
-      
-      window.getAmazonComparison = function(items) {
-        // Amazon価格データがある商品のみ抽出
-        const itemsWithAmazon = items.filter(item => 
-          item.amazonInfo && item.amazonInfo.price
-        ).slice(0, 10); // 最大10件まで
-        
-        const labels = itemsWithAmazon.map(item => 
-          item.name.length > 10 ? item.name.substring(0, 10) + '...' : item.name
-        );
-        
-        const mercariPrices = itemsWithAmazon.map(item => 
-          item.rawPrice || parseInt(item.price.replace(/,/g, ''))
-        );
-        
-        const amazonPrices = itemsWithAmazon.map(item => 
-          parseInt(item.amazonInfo.price.replace(/,/g, ''))
-        );
-        
-        return {
-          labels,
-          mercariPrices,
-          amazonPrices
-        };
-      };
-      
-      // renderChart 関数をオーバーライド
-      window.renderChart = function(data, chartType) {
-        const canvas = document.getElementById('trend-chart');
-        const ctx = canvas.getContext('2d');
-        
-        // 既存のチャートがあれば破棄
-        if (window.trendChart) {
-          window.trendChart.destroy();
-          window.trendChart = null;
-        }
-        
-        let chartData;
-        let chartConfig;
-        
-        switch (chartType) {
-          case 'price':
-            // 価格分布チャート
-            const priceRanges = window.getPriceRanges(data.items);
-            chartData = {
-              labels: priceRanges.labels,
-              datasets: [{
-                label: '価格分布',
-                data: priceRanges.counts,
-                backgroundColor: '#ffd700'
-              }]
-            };
-            chartConfig = {
-              type: 'bar',
-              data: chartData
-            };
-            break;
-            
-          case 'category':
-            // カテゴリ分布チャート
-            const categories = window.getCategoryDistribution(data.items);
-            chartData = {
-              labels: categories.labels,
-              datasets: [{
-                label: 'カテゴリ分布',
-                data: categories.counts,
-                backgroundColor: SimpleCharts.colors
-              }]
-            };
-            chartConfig = {
-              type: 'pie',
-              data: chartData
-            };
-            break;
-            
-          case 'comparison':
-            // Amazonとの価格比較チャート
-            const comparisonData = window.getAmazonComparison(data.items);
-            chartData = {
-              labels: comparisonData.labels,
-              datasets: [
-                {
-                  label: 'メルカリ価格',
-                  data: comparisonData.mercariPrices,
-                  backgroundColor: '#ffd700'
-                },
-                {
-                  label: 'Amazon価格',
-                  data: comparisonData.amazonPrices,
-                  backgroundColor: '#ff9800'
-                }
-              ]
-            };
-            chartConfig = {
-              type: 'comparison', // カスタムタイプ
-              data: chartData
-            };
-            break;
-        }
-        
-        // チャートを作成（カスタムChart関数で）
-        window.trendChart = new Chart(ctx, chartConfig);
-      };
-      
-      // タブ切り替え機能
-      function initializeTabs() {
-        const tabs = document.querySelectorAll('.tab');
-        const tabContents = document.querySelectorAll('.tab-content');
-        
-        tabs.forEach(tab => {
-          tab.addEventListener('click', function() {
-            // 現在のタブから活性クラスを削除
-            tabs.forEach(t => t.classList.remove('active'));
-            // クリックされたタブに活性クラスを追加
-            this.classList.add('active');
-            
-            // すべてのタブコンテンツを非表示に
-            tabContents.forEach(content => {
-              content.classList.remove('active');
-            });
-            
-            // 選択されたタブのコンテンツを表示
-            const tabId = this.getAttribute('data-tab');
-            document.getElementById(tabId + '-tab').classList.add('active');
-          });
-        });
-      }
-      
-      // リスト管理機能の初期化
-      function initializeListManagement() {
-        const showListButton = document.getElementById('show-product-list');
-        const syncInventoryButton = document.getElementById('sync-inventory');
-        const listCountElem = document.getElementById('list-count');
-        const syncCountElem = document.getElementById('sync-count');
-        const listStatusElem = document.getElementById('list-status');
-        
-        // ストレージからリスト情報を取得
-        chrome.storage.local.get(['productList', 'inventoryList'], function(result) {
-          const productList = result.productList || [];
-          const inventoryList = result.inventoryList || [];
-          const pendingSync = inventoryList.filter(item => item.pendingSync).length;
-          
-          // カウントを表示
-          listCountElem.textContent = productList.length;
-          syncCountElem.textContent = pendingSync;
-          
-          // ボタンのイベント
-          showListButton.addEventListener('click', function() {
-            listStatusElem.textContent = 'リストを表示中...';
-            
-            // アクティブタブに商品リスト表示命令を送信
-            chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-              if (tabs.length > 0) {
-                chrome.tabs.sendMessage(tabs[0].id, {
-                  action: 'openProductList'
-                }, function(response) {
-                  if (chrome.runtime.lastError) {
-                    listStatusElem.textContent = 'エラー: メルカリページで開いてください';
-                  } else {
-                    listStatusElem.textContent = 'リストが表示されました';
-                    setTimeout(() => {
-                      listStatusElem.textContent = 'ステータス: 準備完了';
-                    }, 2000);
-                  }
-                });
-              } else {
-                listStatusElem.textContent = 'エラー: タブが見つかりません';
-              }
-            });
-          });
-          
-          // 在庫同期ボタンのイベント
-          syncInventoryButton.addEventListener('click', function() {
-            if (pendingSync === 0) {
-              listStatusElem.textContent = '同期するデータがありません';
-              setTimeout(() => {
-                listStatusElem.textContent = 'ステータス: 準備完了';
-              }, 2000);
-              return;
-            }
-            
-            listStatusElem.textContent = `${pendingSync}件のデータを同期中...`;
-            
-            // バックグラウンドに同期リクエスト送信
-            chrome.runtime.sendMessage({
-              action: 'syncInventoryData'
-            }, function(response) {
-              if (chrome.runtime.lastError) {
-                listStatusElem.textContent = 'エラー: ' + chrome.runtime.lastError.message;
-              } else if (response.status === 'success') {
-                listStatusElem.textContent = response.message;
-                
-                // カウントを更新
-                syncCountElem.textContent = '0';
-                
-                setTimeout(() => {
-                  listStatusElem.textContent = 'ステータス: 準備完了';
-                }, 2000);
-              } else {
-                listStatusElem.textContent = 'エラー: ' + (response.message || '同期に失敗しました');
-              }
-            });
-          });
-        });
-      }
-    });
-  </script>
-  
-  <!-- popup.jsを最後に読み込み -->
   <script src="popup.js"></script>
 </body>
 </html>
