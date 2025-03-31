@@ -10,17 +10,24 @@
       width: 340px;
       padding: 15px;
       margin: 0;
+      background: linear-gradient(135deg, #fffde7 0%, #fff8e1 100%);
     }
     
     h1 {
       font-size: 16px;
       margin-bottom: 15px;
-      color: #333;
+      color: #5d4037;
       padding-bottom: 8px;
-      border-bottom: 1px solid #eee;
+      border-bottom: 1px solid #f0e68c;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      background: linear-gradient(to right, #daa520, #ffd700);
+      padding: 8px 12px;
+      border-radius: 8px;
+      color: #5d4037;
+      text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
     
     .container {
@@ -31,6 +38,10 @@
     
     .section {
       margin-bottom: 15px;
+      background-color: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
     }
     
     .section-title {
@@ -45,17 +56,18 @@
       height: 150px;
       padding: 8px;
       box-sizing: border-box;
-      border: 1px solid #ccc;
+      border: 1px solid #daa520;
       border-radius: 4px;
       resize: none;
       font-size: 13px;
       line-height: 1.4;
+      background-color: #fffef7;
     }
     
     textarea:focus {
-      border-color: #4CAF50;
+      border-color: #d4af37;
       outline: none;
-      box-shadow: 0 0 3px rgba(76, 175, 80, 0.3);
+      box-shadow: 0 0 3px rgba(218, 165, 32, 0.3);
     }
     
     .description {
@@ -79,34 +91,37 @@
     select {
       width: 100%;
       padding: 6px 8px;
-      border: 1px solid #ccc;
+      border: 1px solid #daa520;
       border-radius: 4px;
       background-color: white;
       font-size: 13px;
     }
     
     select:focus {
-      border-color: #4CAF50;
+      border-color: #d4af37;
       outline: none;
     }
     
     button {
-      background-color: #4CAF50;
-      color: white;
+      background: linear-gradient(to right, #daa520, #ffd700);
+      color: #5d4037;
       border: none;
       padding: 10px 16px;
       text-align: center;
       text-decoration: none;
       display: inline-block;
       font-size: 14px;
-      border-radius: 4px;
+      border-radius: 20px;
       cursor: pointer;
       width: 100%;
-      transition: background-color 0.2s;
+      transition: all 0.2s;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      text-shadow: 0 1px 1px rgba(255, 255, 255, 0.3);
     }
     
     button:hover {
-      background-color: #45a049;
+      background: linear-gradient(to right, #d4af37, #ffdf00);
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
     }
     
     .status {
@@ -136,6 +151,8 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      border: 1px solid #f0e68c;
+      background: linear-gradient(135deg, #fffef7 0%, #fff8e1 100%);
     }
     
     .count-info {
@@ -144,7 +161,7 @@
     
     .count-number {
       font-weight: bold;
-      color: #4CAF50;
+      color: #d4af37;
     }
     
     .status-badge {
@@ -192,25 +209,25 @@
     .tab-container {
       display: flex;
       margin-bottom: 15px;
-      border-bottom: 1px solid #ddd;
+      border-bottom: 1px solid #f0e68c;
     }
     
     .tab {
       padding: 8px 12px;
       cursor: pointer;
       font-size: 13px;
-      border: 1px solid transparent;
+      border: 1px solid #f0e68c;
       border-bottom: none;
       border-radius: 4px 4px 0 0;
       margin-right: 5px;
-      background-color: #f5f5f5;
+      background-color: #fffef7;
     }
     
     .tab.active {
-      background-color: white;
-      border-color: #ddd;
+      background: linear-gradient(to bottom, #ffd700, #fffef7);
+      border-color: #daa520;
       position: relative;
-      color: #4CAF50;
+      color: #5d4037;
       font-weight: bold;
     }
     
@@ -221,7 +238,7 @@
       left: 0;
       right: 0;
       height: 1px;
-      background-color: white;
+      background-color: #fffef7;
     }
     
     .tab-content {
@@ -249,19 +266,19 @@
     .trend-select {
       flex: 1;
       padding: 6px 8px;
-      border: 1px solid #ccc;
+      border: 1px solid #daa520;
       border-radius: 4px;
       font-size: 13px;
     }
     
     .trend-select:focus {
-      border-color: #4CAF50;
+      border-color: #d4af37;
       outline: none;
     }
     
     .trend-button {
-      background-color: #4CAF50;
-      color: white;
+      background: linear-gradient(to right, #daa520, #ffd700);
+      color: #5d4037;
       border: none;
       padding: 6px 12px;
       border-radius: 4px;
@@ -270,13 +287,13 @@
     }
     
     .trend-button:hover {
-      background-color: #45a049;
+      background: linear-gradient(to right, #d4af37, #ffdf00);
     }
     
     .trend-list {
       max-height: 300px;
       overflow-y: auto;
-      border: 1px solid #eee;
+      border: 1px solid #f0e68c;
       border-radius: 4px;
       padding: 0;
       margin: 0;
@@ -286,7 +303,7 @@
     
     .trend-item {
       padding: 8px 12px;
-      border-bottom: 1px solid #eee;
+      border-bottom: 1px solid #f0e68c;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -298,8 +315,8 @@
     }
     
     .trend-rank {
-      background-color: #4CAF50;
-      color: white;
+      background: linear-gradient(to right, #daa520, #ffd700);
+      color: #5d4037;
       width: 24px;
       height: 24px;
       border-radius: 50%;
@@ -313,11 +330,11 @@
     }
     
     .trend-rank.top-3 {
-      background-color: #ff9800;
+      background: linear-gradient(to right, #ffa000, #ffca28);
     }
     
     .trend-rank.top-1 {
-      background-color: #f44336;
+      background: linear-gradient(to right, #ff8f00, #ffb300);
     }
     
     .trend-info {
@@ -359,9 +376,9 @@
       display: inline-block;
       width: 20px;
       height: 20px;
-      border: 3px solid rgba(0, 0, 0, 0.1);
+      border: 3px solid rgba(218, 165, 32, 0.1);
       border-radius: 50%;
-      border-top-color: #4CAF50;
+      border-top-color: #daa520;
       animation: spin 1s linear infinite;
       margin-right: 10px;
       vertical-align: middle;
@@ -378,32 +395,32 @@
     .chart-tabs {
       display: flex;
       margin: 15px 0 10px;
-      border-bottom: 1px solid #ddd;
+      border-bottom: 1px solid #f0e68c;
     }
     
     .chart-tab {
       padding: 6px 10px;
       cursor: pointer;
       font-size: 12px;
-      border: 1px solid #ddd;
+      border: 1px solid #f0e68c;
       border-bottom: none;
       border-radius: 4px 4px 0 0;
       margin-right: 3px;
-      background-color: #f5f5f5;
+      background-color: #fffef7;
     }
     
     .chart-tab.active {
-      background-color: white;
-      border-bottom-color: white;
+      background: linear-gradient(to bottom, #ffd700, #fffef7);
+      border-bottom-color: #fffef7;
       margin-bottom: -1px;
       font-weight: bold;
-      color: #4CAF50;
+      color: #5d4037;
     }
     
     .amazon-comparison {
       margin-top: 15px;
-      background-color: #f9f9f9;
-      border: 1px solid #eee;
+      background-color: #fffef7;
+      border: 1px solid #f0e68c;
       border-radius: 4px;
       padding: 10px;
     }
@@ -411,7 +428,7 @@
     .amazon-comparison-title {
       font-size: 13px;
       font-weight: bold;
-      color: #333;
+      color: #5d4037;
       margin-bottom: 8px;
     }
     
@@ -420,7 +437,7 @@
       justify-content: space-between;
       align-items: center;
       padding: 8px 0;
-      border-bottom: 1px solid #eee;
+      border-bottom: 1px solid #f0e68c;
       font-size: 12px;
     }
     
@@ -442,6 +459,74 @@
     
     .price-equal {
       color: #ff9800;
+    }
+    
+    /* 新機能: リストと在庫管理 */
+    .list-management {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    
+    .list-button {
+      background: linear-gradient(to right, #ff80ab, #ff4081);
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 13px;
+      flex: 1;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    
+    .list-button:hover {
+      background: linear-gradient(to right, #f06292, #e91e63);
+    }
+    
+    .inventory-button {
+      background: linear-gradient(to right, #90caf9, #42a5f5);
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 13px;
+      flex: 1;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    
+    .inventory-button:hover {
+      background: linear-gradient(to right, #64b5f6, #2196f3);
+    }
+    
+    .list-count {
+      background-color: white;
+      color: #e91e63;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 11px;
+      font-weight: bold;
+      margin-left: 5px;
+    }
+    
+    .sync-count {
+      background-color: white;
+      color: #2196f3;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 11px;
+      font-weight: bold;
+      margin-left: 5px;
     }
     
     @keyframes spin {
@@ -467,6 +552,7 @@
       <div class="tab active" data-tab="basic">基本設定</div>
       <div class="tab" data-tab="advanced">詳細設定</div>
       <div class="tab" data-tab="analysis">トレンド分析</div>
+      <div class="tab" data-tab="list">リスト管理</div>
     </div>
     
     <!-- 基本設定タブ -->
@@ -500,6 +586,19 @@
         
         <p class="description">
           コントロールパネルを非表示にしても、拡張機能アイコンをクリックすることでフィルターのオン/オフを切り替えられます。
+        </p>
+      </div>
+      
+      <div class="section">
+        <div class="section-title">カスタムボタン設定</div>
+        
+        <div class="checkbox-container">
+          <input type="checkbox" id="showCustomButtons" checked>
+          <label for="showCustomButtons">商品に追加ボタンを表示する</label>
+        </div>
+        
+        <p class="description">
+          有効にすると、ブロックされていない商品の下部に「リストに追加」と「在庫リストに追加」ボタンを表示します。
         </p>
       </div>
     </div>
@@ -565,6 +664,32 @@
       </div>
     </div>
     
+    <!-- リスト管理タブ -->
+    <div id="list-tab" class="tab-content">
+      <div class="section">
+        <div class="section-title">商品・在庫リスト管理</div>
+        <p class="description">
+          保存した商品リストや在庫リストを管理します。
+          メルカリページでカスタムボタンを使って商品を追加できます。
+        </p>
+        
+        <div class="list-management">
+          <button id="show-product-list" class="list-button">
+            商品リストを表示
+            <span class="list-count" id="list-count">0</span>
+          </button>
+          <button id="sync-inventory" class="inventory-button">
+            在庫データを同期
+            <span class="sync-count" id="sync-count">0</span>
+          </button>
+        </div>
+        
+        <div id="list-status" style="margin-top: 15px; text-align: center; font-size: 12px; color: #666;">
+          ステータス: 準備完了
+        </div>
+      </div>
+    </div>
+    
     <button id="saveButton">設定を保存</button>
     
     <div id="status" class="status"></div>
@@ -606,11 +731,11 @@
         const maxValue = Math.max(...values);
         
         // グラフ背景
-        ctx.fillStyle = '#f9f9f9';
+        ctx.fillStyle = '#fffef7';
         ctx.fillRect(padding, padding, chartWidth, height - padding * 2);
         
         // X軸とY軸を描画
-        ctx.strokeStyle = '#ddd';
+        ctx.strokeStyle = '#f0e68c';
         ctx.beginPath();
         ctx.moveTo(padding, height - padding);
         ctx.lineTo(width - padding, height - padding);
@@ -632,15 +757,15 @@
           const x = padding + (index * (barWidth + barSpacing)) + barSpacing / 2;
           const y = height - padding - barHeight;
           
-          // バー
-          ctx.fillStyle = dataset.backgroundColor || this.colors[0];
-          if (Array.isArray(dataset.backgroundColor)) {
-            ctx.fillStyle = dataset.backgroundColor[index % dataset.backgroundColor.length];
-          }
+          // バー（グラデーション）
+          const gradient = ctx.createLinearGradient(x, y, x, height - padding);
+          gradient.addColorStop(0, '#ffd700');
+          gradient.addColorStop(1, '#daa520');
+          ctx.fillStyle = gradient;
           ctx.fillRect(x, y, barWidth, barHeight);
           
           // 値
-          ctx.fillStyle = '#333';
+          ctx.fillStyle = '#5d4037';
           ctx.textAlign = 'center';
           ctx.font = '10px Arial';
           ctx.fillText(value, x + barWidth / 2, y - 5);
@@ -679,15 +804,18 @@
         let startAngle = 0;
         let legendY = 20;
         
+        // ゴールドベースのカラーパレット
+        const goldPalette = [
+          '#ffd700', '#daa520', '#b8860b', '#cd853f', '#d2b48c',
+          '#f0e68c', '#bdb76b', '#eee8aa', '#f5deb3', '#ffe4b5'
+        ];
+        
         values.forEach((value, index) => {
           // 角度を計算
           const sliceAngle = (value / total) * 2 * Math.PI;
           
           // カラー選択
-          let color = this.colors[index % this.colors.length];
-          if (dataset.backgroundColor && Array.isArray(dataset.backgroundColor)) {
-            color = dataset.backgroundColor[index % dataset.backgroundColor.length];
-          }
+          let color = goldPalette[index % goldPalette.length];
           
           // 弧を描画
           ctx.beginPath();
@@ -712,7 +840,7 @@
           
           // パーセントを表示
           const percent = Math.round((value / total) * 100);
-          ctx.fillStyle = '#fff';
+          ctx.fillStyle = '#5d4037';
           ctx.font = 'bold 12px Arial';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
@@ -724,7 +852,7 @@
           ctx.fillStyle = color;
           ctx.fillRect(width - 150, legendY, 15, 15);
           
-          ctx.fillStyle = '#333';
+          ctx.fillStyle = '#5d4037';
           ctx.font = '12px Arial';
           ctx.textAlign = 'left';
           ctx.fillText(`${labels[index]} (${value})`, width - 130, legendY + 7);
@@ -763,11 +891,11 @@
         });
         
         // グラフ背景
-        ctx.fillStyle = '#f9f9f9';
+        ctx.fillStyle = '#fffef7';
         ctx.fillRect(padding, padding, chartWidth, height - padding * 2);
         
         // X軸とY軸を描画
-        ctx.strokeStyle = '#ddd';
+        ctx.strokeStyle = '#f0e68c';
         ctx.beginPath();
         ctx.moveTo(padding, height - padding);
         ctx.lineTo(width - padding, height - padding);
@@ -792,12 +920,20 @@
             const x = padding + (index * groupWidth) + (datasetIndex * barWidth) + (groupWidth * 0.15);
             const y = height - padding - barHeight;
             
-            // バー
-            ctx.fillStyle = dataset.backgroundColor || this.colors[datasetIndex];
+            // バー（グラデーション）
+            const gradient = ctx.createLinearGradient(x, y, x, height - padding);
+            if (datasetIndex === 0) {
+              gradient.addColorStop(0, '#ffd700');
+              gradient.addColorStop(1, '#daa520');
+            } else {
+              gradient.addColorStop(0, '#ffb74d');
+              gradient.addColorStop(1, '#ff9800');
+            }
+            ctx.fillStyle = gradient;
             ctx.fillRect(x, y, barWidth, barHeight);
             
             // 値
-            ctx.fillStyle = '#333';
+            ctx.fillStyle = '#5d4037';
             ctx.textAlign = 'center';
             ctx.font = '10px Arial';
             ctx.fillText(value, x + barWidth / 2, y - 5);
@@ -807,7 +943,7 @@
         // X軸のラベル
         labels.forEach((label, index) => {
           const x = padding + (index * groupWidth) + (groupWidth / 2);
-          ctx.fillStyle = '#333';
+          ctx.fillStyle = '#5d4037';
           ctx.textAlign = 'center';
           ctx.font = '10px Arial';
           // ラベルが長い場合は省略
@@ -820,10 +956,11 @@
         let legendY = 20;
         
         datasets.forEach((dataset, index) => {
-          ctx.fillStyle = dataset.backgroundColor || this.colors[index];
+          const color = index === 0 ? '#ffd700' : '#ffb74d';
+          ctx.fillStyle = color;
           ctx.fillRect(legendX, legendY, 15, 15);
           
-          ctx.fillStyle = '#333';
+          ctx.fillStyle = '#5d4037';
           ctx.textAlign = 'left';
           ctx.font = '12px Arial';
           ctx.fillText(dataset.label, legendX + 20, legendY + 12);
@@ -869,12 +1006,18 @@
     };
   </script>
   
-  <!-- popup.js 関数オーバーライド -->
+  <!-- popup.js関数オーバーライド -->
   <script>
     // ページの読み込みが完了した後に実行
     document.addEventListener('DOMContentLoaded', function() {
       // グローバル変数
       window.trendChart = null;
+      
+      // タブ切り替え設定
+      initializeTabs();
+      
+      // リスト管理タブの初期化
+      initializeListManagement();
       
       // データヘルパー関数（popup.jsで必要なため定義）
       window.getPriceRanges = function(items) {
@@ -986,7 +1129,7 @@
               datasets: [{
                 label: '価格分布',
                 data: priceRanges.counts,
-                backgroundColor: '#4CAF50'
+                backgroundColor: '#ffd700'
               }]
             };
             chartConfig = {
@@ -1021,12 +1164,12 @@
                 {
                   label: 'メルカリ価格',
                   data: comparisonData.mercariPrices,
-                  backgroundColor: '#4CAF50'
+                  backgroundColor: '#ffd700'
                 },
                 {
                   label: 'Amazon価格',
                   data: comparisonData.amazonPrices,
-                  backgroundColor: '#FF9800'
+                  backgroundColor: '#ff9800'
                 }
               ]
             };
@@ -1040,6 +1183,108 @@
         // チャートを作成（カスタムChart関数で）
         window.trendChart = new Chart(ctx, chartConfig);
       };
+      
+      // タブ切り替え機能
+      function initializeTabs() {
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        tabs.forEach(tab => {
+          tab.addEventListener('click', function() {
+            // 現在のタブから活性クラスを削除
+            tabs.forEach(t => t.classList.remove('active'));
+            // クリックされたタブに活性クラスを追加
+            this.classList.add('active');
+            
+            // すべてのタブコンテンツを非表示に
+            tabContents.forEach(content => {
+              content.classList.remove('active');
+            });
+            
+            // 選択されたタブのコンテンツを表示
+            const tabId = this.getAttribute('data-tab');
+            document.getElementById(tabId + '-tab').classList.add('active');
+          });
+        });
+      }
+      
+      // リスト管理機能の初期化
+      function initializeListManagement() {
+        const showListButton = document.getElementById('show-product-list');
+        const syncInventoryButton = document.getElementById('sync-inventory');
+        const listCountElem = document.getElementById('list-count');
+        const syncCountElem = document.getElementById('sync-count');
+        const listStatusElem = document.getElementById('list-status');
+        
+        // ストレージからリスト情報を取得
+        chrome.storage.local.get(['productList', 'inventoryList'], function(result) {
+          const productList = result.productList || [];
+          const inventoryList = result.inventoryList || [];
+          const pendingSync = inventoryList.filter(item => item.pendingSync).length;
+          
+          // カウントを表示
+          listCountElem.textContent = productList.length;
+          syncCountElem.textContent = pendingSync;
+          
+          // ボタンのイベント
+          showListButton.addEventListener('click', function() {
+            listStatusElem.textContent = 'リストを表示中...';
+            
+            // アクティブタブに商品リスト表示命令を送信
+            chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+              if (tabs.length > 0) {
+                chrome.tabs.sendMessage(tabs[0].id, {
+                  action: 'openProductList'
+                }, function(response) {
+                  if (chrome.runtime.lastError) {
+                    listStatusElem.textContent = 'エラー: メルカリページで開いてください';
+                  } else {
+                    listStatusElem.textContent = 'リストが表示されました';
+                    setTimeout(() => {
+                      listStatusElem.textContent = 'ステータス: 準備完了';
+                    }, 2000);
+                  }
+                });
+              } else {
+                listStatusElem.textContent = 'エラー: タブが見つかりません';
+              }
+            });
+          });
+          
+          // 在庫同期ボタンのイベント
+          syncInventoryButton.addEventListener('click', function() {
+            if (pendingSync === 0) {
+              listStatusElem.textContent = '同期するデータがありません';
+              setTimeout(() => {
+                listStatusElem.textContent = 'ステータス: 準備完了';
+              }, 2000);
+              return;
+            }
+            
+            listStatusElem.textContent = `${pendingSync}件のデータを同期中...`;
+            
+            // バックグラウンドに同期リクエスト送信
+            chrome.runtime.sendMessage({
+              action: 'syncInventoryData'
+            }, function(response) {
+              if (chrome.runtime.lastError) {
+                listStatusElem.textContent = 'エラー: ' + chrome.runtime.lastError.message;
+              } else if (response.status === 'success') {
+                listStatusElem.textContent = response.message;
+                
+                // カウントを更新
+                syncCountElem.textContent = '0';
+                
+                setTimeout(() => {
+                  listStatusElem.textContent = 'ステータス: 準備完了';
+                }, 2000);
+              } else {
+                listStatusElem.textContent = 'エラー: ' + (response.message || '同期に失敗しました');
+              }
+            });
+          });
+        });
+      }
     });
   </script>
   

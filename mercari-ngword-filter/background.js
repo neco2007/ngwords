@@ -170,6 +170,49 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     sendResponse({status: 'success'});
   }
   
+  // 商品リストの更新を同期
+  else if (request.action === 'productListUpdated') {
+    log('商品リストの更新を同期します', 'debug');
+    
+    // データを保存
+    chrome.storage.local.set({
+      productList: request.productList,
+      lastUpdated: Date.now()
+    });
+    
+    // 他のタブに通知
+    chrome.tabs.query({url: '*://jp.mercari.com/*'}, function(tabs) {
+      const senderTabId = sender.tab ? sender.tab.id : null;
+      
+      tabs.forEach(function(tab) {
+        if (tab.id !== senderTabId) {
+          chrome.tabs.sendMessage(tab.id, {
+            action: 'updateProductList',
+            productList: request.productList
+          }).catch(error => {
+            // エラーは無視
+            log(`タブID ${tab.id} への商品リスト通知に失敗: ${error}`, 'debug');
+          });
+        }
+      });
+    });
+    
+    sendResponse({status: 'success'});
+  }
+  
+  // 在庫リストの更新を同期
+  else if (request.action === 'inventoryListUpdated') {
+    log('在庫リストの更新を同期します', 'debug');
+    
+    // データを保存
+    chrome.storage.local.set({
+      inventoryList: request.inventoryList,
+      lastUpdated: Date.now()
+    });
+    
+    sendResponse({status: 'success'});
+  }
+  
   return true; // 非同期レスポンスを有効化
 });
 
@@ -205,6 +248,8 @@ chrome.runtime.onInstalled.addListener(function(details) {
       isFilterActive: false, // デフォルトは無効
       customNgWords: [], // カスタムNGワードは空
       controlPanelVisible: true, // パネルはデフォルトで表示
+      productList: [], // 商品リストは空
+      inventoryList: [], // 在庫リストは空
       installDate: Date.now()
     });
     
@@ -224,7 +269,7 @@ chrome.runtime.onInstalled.addListener(function(details) {
       type: 'basic',
       iconUrl: 'images/icon128.png',
       title: 'メルカリNGワードブロッカー',
-      message: '拡張機能が最新バージョンに更新されました。新機能「トレンド分析」と「Amazon比較機能」が追加されました。'
+      message: '拡張機能が最新バージョンに更新されました。商品リスト追加機能とAmazon検索機能が追加されました。'
     });
   }
 });

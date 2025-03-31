@@ -98,49 +98,65 @@
   font-weight: bold;
 }
 
-/* コントロールパネルのスタイル */
+/* コントロールパネルのスタイル（ゴールド風に変更） */
 #ng-control-panel {
   position: fixed;
   top: 100px;
   right: 0;
   width: 280px;
-  background-color: rgba(255, 255, 255, 0.95);
-  border: 1px solid #ccc;
+  background: linear-gradient(135deg, #f8e9a1 0%, #f1c40f 50%, #e6b422 100%);
+  border: 1px solid #daa520;
   border-right: none;
   border-radius: 8px 0 0 8px;
-  box-shadow: -2px 2px 10px rgba(0, 0, 0, 0.2);
+  box-shadow: -2px 2px 15px rgba(218, 165, 32, 0.4);
   z-index: 99999;
-  font-family: Arial, sans-serif;
+  font-family: 'Hiragino Sans', 'Meiryo', sans-serif;
   color: #333;
   transition: transform 0.3s ease;
   max-height: 80vh;
   overflow-y: auto;
+  /* ラメ効果 */
+  background-image: 
+    linear-gradient(135deg, #f8e9a1 0%, #f1c40f 50%, #e6b422 100%),
+    url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><g fill-rule="evenodd"><g fill="%23ffffff" opacity="0.1"><path d="M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z"></path></g></g></svg>');
 }
 
 #ng-control-panel.ng-panel-collapsed {
   transform: translateX(calc(100% - 32px));
 }
 
+/* パネルヘッダー（ゴールド風） */
 .ng-panel-header {
-  background-color: #4CAF50;
-  color: white;
-  padding: 8px 12px;
+  background: linear-gradient(to right, #daa520, #ffd700);
+  color: #5d4037;
+  padding: 10px 15px;
   font-weight: bold;
   display: flex;
   justify-content: space-between;
   align-items: center;
   cursor: grab;
   border-radius: 6px 0 0 0;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);
 }
 
 .ng-panel-toggle {
-  display: inline-block;
-  width: 24px;
-  height: 24px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 30px;
+  height: 30px;
   text-align: center;
-  line-height: 24px;
   cursor: pointer;
   font-size: 18px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  margin-left: 5px;
+  transition: background-color 0.2s;
+}
+
+.ng-panel-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.4);
 }
 
 .ng-panel-body {
@@ -301,7 +317,262 @@ input:checked + .ng-control-slider:before {
   margin-top: 5px;
 }
 
-/* アニメーション */
+/* パネルトグル用の追加スタイル */
+.ng-permanent-toggle {
+  position: fixed;
+  right: 0;
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(to right, #daa520, #ffd700);
+  color: #5d4037;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  border-radius: 4px 0 0 4px;
+  box-shadow: -2px 2px 5px rgba(0, 0, 0, 0.2);
+  z-index: 100000;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.3);
+}
+
+.ng-permanent-toggle.panel-visible {
+  right: 280px;
+}
+
+/* 商品カスタムボタンコンテナ */
+.custom-buttons-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  width: 100%;
+}
+
+/* カスタムボタン共通スタイル */
+.custom-product-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20px;
+  border: 2px solid #ff80ab;
+  background: linear-gradient(to right, #ffebee, #fce4ec);
+  color: #ad1457;
+  font-weight: bold;
+  font-size: 13px;
+  padding: 8px 15px;
+  cursor: pointer;
+  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  text-align: center;
+  font-family: 'Hiragino Sans', 'Meiryo', sans-serif;
+}
+
+.custom-product-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(to right, #fce4ec, #f8bbd0);
+}
+
+.custom-product-button:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* リスト追加ボタン */
+.add-to-list-button {
+  background: linear-gradient(to right, #ffebee, #fce4ec);
+  border: 2px solid #ff80ab;
+}
+
+.add-to-list-button::before {
+  content: '♡';
+  margin-right: 5px;
+  font-size: 16px;
+}
+
+/* 在庫リスト追加ボタン */
+.add-to-inventory-button {
+  background: linear-gradient(to right, #e3f2fd, #bbdefb);
+  border: 2px solid #90caf9;
+  color: #0d47a1;
+}
+
+.add-to-inventory-button::before {
+  content: '✓';
+  margin-right: 5px;
+  font-size: 16px;
+}
+
+/* Amazonで検索ボタン */
+.amazon-search-button {
+  background: linear-gradient(to right, #ffecb3, #ffe082);
+  border: 2px solid #ffd54f;
+  color: #ff6f00;
+}
+
+.amazon-search-button::before {
+  content: '🔍';
+  margin-right: 5px;
+  font-size: 14px;
+}
+
+/* 商品リスト表示用スタイル */
+.product-list-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  max-width: 1200px;
+  height: 80%;
+  background-color: white;
+  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  z-index: 999999;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.product-list-header {
+  padding: 15px;
+  background: linear-gradient(to right, #daa520, #ffd700);
+  color: #5d4037;
+  font-weight: bold;
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid #f0e68c;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.3);
+}
+
+.product-list-close {
+  cursor: pointer;
+  font-size: 20px;
+  color: #5d4037;
+}
+
+.product-list-content {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 20px;
+}
+
+.product-card {
+  border: 1px solid #eeeeee;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.product-image {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+}
+
+.product-details {
+  padding: 12px;
+}
+
+.product-title {
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  height: 42px;
+}
+
+.product-price {
+  font-size: 16px;
+  font-weight: bold;
+  color: #e53935;
+  margin-bottom: 10px;
+}
+
+.product-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.amazon-button {
+  background: linear-gradient(to right, #ffecb3, #ffe082);
+  border: 1px solid #ffd54f;
+  color: #ff6f00;
+  padding: 8px;
+  border-radius: 4px;
+  text-align: center;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.amazon-button:hover {
+  background: linear-gradient(to right, #ffe082, #ffd54f);
+}
+
+/* 擬似商品表示用 */
+.pseudo-product {
+  border: 1px dashed #bbdefb;
+  background-color: #e3f2fd;
+}
+
+.pseudo-product .product-title {
+  color: #1976d2;
+}
+
+.pseudo-product .product-price {
+  color: #0d47a1;
+}
+
+.no-products {
+  grid-column: span 5;
+  text-align: center;
+  padding: 50px;
+  color: #757575;
+  font-style: italic;
+}
+
+/* 通知メッセージ */
+.notification {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 15px 20px;
+  background-color: #4CAF50;
+  color: white;
+  border-radius: 6px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+  z-index: 999999;
+  font-size: 14px;
+  transform: translateY(100px);
+  opacity: 0;
+  animation: slideIn 0.3s forwards, slideOut 0.3s 3s forwards;
+}
+
+.notification.error {
+  background-color: #f44336;
+}
+
 @keyframes fadeInOut {
   0% { opacity: 0; }
   10% { opacity: 1; }
@@ -313,4 +584,12 @@ input:checked + .ng-control-slider:before {
   0% { opacity: 1; }
   50% { opacity: 0.5; }
   100% { opacity: 1; }
+}
+
+@keyframes slideIn {
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideOut {
+  to { transform: translateY(100px); opacity: 0; }
 }
